@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>HttpHeader.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">sai-http-utils-java</a> &gt; <a href="index.source.html" class="el_package">com.janeirodigital.sai.httputils</a> &gt; <span class="el_source">HttpHeader.java</span></div><h1>HttpHeader.java</h1><pre class="source lang-java linenums">package com.janeirodigital.sai.httputils;
+
+import java.util.Collections;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+
+/**
+ * Enumerated list of applicable HTTP headers
+ */
+<span class="fc" id="L10">public enum HttpHeader {</span>
+<span class="fc" id="L11">    ACCEPT(&quot;Accept&quot;),</span>
+<span class="fc" id="L12">    AUTHORIZATION(&quot;Authorization&quot;),</span>
+<span class="fc" id="L13">    DPOP(&quot;DPoP&quot;),</span>
+<span class="fc" id="L14">    CONTENT_TYPE(&quot;Content-Type&quot;),</span>
+<span class="fc" id="L15">    LINK(&quot;Link&quot;),</span>
+<span class="fc" id="L16">    IF_NONE_MATCH(&quot;If-None-Match&quot;),</span>
+<span class="fc" id="L17">    LOCATION(&quot;Location&quot;),</span>
+<span class="fc" id="L18">    SLUG(&quot;Slug&quot;);</span>
+
+    public String getValue() {
+<span class="fc" id="L21">        return this.value;</span>
+    }
+
+    private final String value;
+
+<span class="fc" id="L26">    HttpHeader(String value) {</span>
+<span class="fc" id="L27">        this.value = value;</span>
+<span class="fc" id="L28">    }</span>
+
+    private static final Map&lt;String,HttpHeader&gt; ENUM_MAP;
+
+    static {
+<span class="fc" id="L33">        Map&lt;String,HttpHeader&gt; map = new ConcurrentHashMap&lt;&gt;();</span>
+<span class="fc bfc" id="L34" title="All 2 branches covered.">        for (HttpHeader instance : HttpHeader.values()) {</span>
+<span class="fc" id="L35">            map.put(instance.getValue().toLowerCase(),instance);</span>
+        }
+<span class="fc" id="L37">        ENUM_MAP = Collections.unmodifiableMap(map);</span>
+<span class="fc" id="L38">    }</span>
+
+    public static HttpHeader get(String name) {
+<span class="nc" id="L41">        return ENUM_MAP.get(name.toLowerCase());</span>
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.7.202105040129</span></div></body></html>

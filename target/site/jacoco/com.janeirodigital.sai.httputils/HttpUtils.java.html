@@ -1,0 +1,555 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>HttpUtils.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">sai-http-utils-java</a> &gt; <a href="index.source.html" class="el_package">com.janeirodigital.sai.httputils</a> &gt; <span class="el_source">HttpUtils.java</span></div><h1>HttpUtils.java</h1><pre class="source lang-java linenums">package com.janeirodigital.sai.httputils;
+
+import com.janeirodigital.sai.rdfutils.SaiRdfException;
+import okhttp3.*;
+import org.apache.jena.rdf.model.Model;
+import org.apache.jena.rdf.model.Resource;
+import org.apache.jena.riot.Lang;
+
+import java.io.IOException;
+import java.net.MalformedURLException;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.net.URL;
+import java.util.Objects;
+import java.util.Set;
+
+import static com.janeirodigital.sai.httputils.ContentType.*;
+import static com.janeirodigital.sai.httputils.ContentType.LD_JSON;
+import static com.janeirodigital.sai.httputils.ContentType.N_TRIPLES;
+import static com.janeirodigital.sai.httputils.ContentType.RDF_XML;
+import static com.janeirodigital.sai.httputils.ContentType.TEXT_TURTLE;
+import static com.janeirodigital.sai.httputils.HttpHeader.CONTENT_TYPE;
+import static com.janeirodigital.sai.httputils.HttpHeader.LINK;
+import static com.janeirodigital.sai.httputils.HttpMethod.*;
+import static com.janeirodigital.sai.rdfutils.RdfUtils.*;
+
+/**
+ * Assorted utility methods related to working with HTTP requests and responses
+ * @see &lt;a href=&quot;https://square.github.io/okhttp/4.x/okhttp/okhttp3/&quot;&gt;OkHttp&lt;/a&gt;
+ * @see &lt;a href=&quot;https://square.github.io/okhttp/4.x/okhttp/okhttp3/-request/&quot;&gt;OkHttp - Request&lt;/a&gt;
+ * @see &lt;a href=&quot;https://square.github.io/okhttp/4.x/okhttp/okhttp3/-response/&quot;&gt;OkHttp - Response&lt;/a&gt;
+ * @see &lt;a href=&quot;https://square.github.io/okhttp/4.x/okhttp/okhttp3/-headers/&quot;&gt;OkHttp - Headers&lt;/a&gt;
+ * @see &lt;a href=&quot;https://square.github.io/okhttp/4.x/okhttp/okhttp3/-response-body/&quot;&gt;OkHttp - ResponseBody&lt;/a&gt;
+ */
+public class HttpUtils {
+
+<span class="fc" id="L37">    public static final Set&lt;ContentType&gt; RDF_CONTENT_TYPES = Set.of(TEXT_TURTLE, RDF_XML, N_TRIPLES, LD_JSON);</span>
+<span class="fc" id="L38">    public static final ContentType DEFAULT_RDF_CONTENT_TYPE = TEXT_TURTLE;</span>
+    public static final String LDP_BASIC_CONTAINER = &quot;http://www.w3.org/ns/ldp#BasicContainer&quot;;
+    public static final String LDP_CONTAINER = &quot;http://www.w3.org/ns/ldp#Container&quot;;
+
+    private HttpUtils() { }
+
+    /**
+     * Perform an HTTP GET on the resource at &lt;code&gt;url&lt;/code&gt;.
+     * The response MUST be closed outside of this call. The body of the response
+     * is returned as a one-shot stream, and &lt;b&gt;MUST BE CLOSED&lt;/b&gt; separately
+     * by the caller.
+     * @see &lt;a href=&quot;https://square.github.io/okhttp/4.x/okhttp/okhttp3/-response-body/#the-response-body-must-be-closed&quot;&gt;OkHttp - Closing the Response Body&lt;/a&gt;
+     * @param httpClient OkHttpClient to perform the GET with
+     * @param url URL of the resource to GET
+     * @param headers Optional OkHttp Headers to include
+     * @return OkHttp Response
+     * @throws SaiHttpException
+     */
+    public static Response getResource(OkHttpClient httpClient, URL url, Headers headers) throws SaiHttpException {
+<span class="fc" id="L57">        Objects.requireNonNull(httpClient, &quot;Must provide an http client to access resource&quot;);</span>
+<span class="fc" id="L58">        Objects.requireNonNull(url, &quot;Must provide a target URL to access resource&quot;);</span>
+        try {
+<span class="fc" id="L60">            Request.Builder requestBuilder = new Request.Builder();</span>
+<span class="fc" id="L61">            requestBuilder.url(url);</span>
+<span class="fc" id="L62">            requestBuilder.method(GET.getValue(), null);</span>
+<span class="fc bfc" id="L63" title="All 2 branches covered.">            if (headers != null) { requestBuilder.headers(headers); }</span>
+<span class="fc" id="L64">            return checkResponse(httpClient.newCall(requestBuilder.build()).execute());</span>
+<span class="fc" id="L65">        } catch (IOException ex) {</span>
+<span class="fc" id="L66">            throw new SaiHttpException(&quot;Failed to get remote resource: &quot; + ex.getMessage());</span>
+        }
+    }
+
+    /**
+     * Calls {@link #getResource(OkHttpClient, URL, Headers)} without any additional
+     * headers supplied.
+     * @param httpClient OkHttpClient to perform the GET with
+     * @param url URL of the resource to GET
+     * @return OkHttp Response
+     * @throws SaiHttpException
+     */
+    public static Response getResource(OkHttpClient httpClient, URL url) throws SaiHttpException {
+<span class="fc" id="L79">        return getResource(httpClient, url, null);</span>
+    }
+
+    /**
+     * Perform an HTTP GET on the resource at &lt;code&gt;url&lt;/code&gt;, and throws an exception if the resource
+     * cannot be found or the response is otherwise unsuccessful. The body of the response
+     * is returned as a one-shot stream, and &lt;b&gt;MUST BE CLOSED&lt;/b&gt; separately
+     * by the caller.
+     * @see &lt;a href=&quot;https://square.github.io/okhttp/4.x/okhttp/okhttp3/-response-body/#the-response-body-must-be-closed&quot;&gt;OkHttp - Closing the Response Body&lt;/a&gt;
+     * @param httpClient OkHttpClient to perform the GET with
+     * @param url URL of the resource to GET
+     * @return OkHttp Response
+     * @throws SaiHttpException
+     * @throws SaiHttpNotFoundException
+     */
+    public static Response getRequiredResource(OkHttpClient httpClient, URL url) throws SaiHttpException, SaiHttpNotFoundException {
+<span class="fc" id="L95">        Response response = getResource(httpClient, url);</span>
+<span class="fc bfc" id="L96" title="All 2 branches covered.">        if (!response.isSuccessful()) {</span>
+<span class="fc bfc" id="L97" title="All 2 branches covered.">            if (response.code() == 404) {</span>
+<span class="fc" id="L98">                throw new SaiHttpNotFoundException(&quot;No resource found at &quot; + response.request().url());</span>
+            } else {
+<span class="fc" id="L100">                throw new SaiHttpException(&quot;HTTP &quot; + response.request().method() + &quot;operation failed on &quot; + response.request().url());</span>
+            }
+        }
+<span class="fc" id="L103">        return response;</span>
+    }
+
+    /**
+     * Perform an HTTP PUT on the resource at &lt;code&gt;url&lt;/code&gt;.
+     * &lt;i&gt;ResponseBody is closed automatically&lt;/i&gt;.
+     * @param httpClient OkHttpClient to perform the PUT with
+     * @param url URL of the resource to PUT
+     * @param headers Optional OkHttp Headers to include
+     * @param body Body of the PUT request
+     * @param contentType {@link ContentType} of the PUT request
+     * @return OkHttp Response
+     * @throws SaiHttpException
+     */
+    public static Response putResource(OkHttpClient httpClient, URL url, Headers headers, String body, ContentType contentType) throws SaiHttpException {
+
+<span class="fc" id="L119">        Objects.requireNonNull(httpClient, &quot;Must provide an http client to access resource&quot;);</span>
+<span class="fc" id="L120">        Objects.requireNonNull(url, &quot;Must provide a target URL to access resource&quot;);</span>
+<span class="fc" id="L121">        Objects.requireNonNull(contentType, &quot;Must provide a content type to create resource&quot;);</span>
+
+<span class="fc" id="L123">        Request.Builder requestBuilder = new Request.Builder();</span>
+<span class="fc" id="L124">        requestBuilder.url(url);</span>
+<span class="fc bfc" id="L125" title="All 2 branches covered.">        if (body == null) { body = &quot;&quot;; }</span>
+<span class="fc" id="L126">        RequestBody requestBody = RequestBody.create(body, MediaType.get(contentType.getValue()));</span>
+<span class="fc" id="L127">        requestBuilder.method(PUT.getValue(), requestBody);</span>
+<span class="fc" id="L128">        headers = setHttpHeader(CONTENT_TYPE, contentType.getValue(), headers);</span>
+<span class="fc" id="L129">        requestBuilder.headers(headers);</span>
+<span class="fc" id="L130">        try (Response response = httpClient.newCall(requestBuilder.build()).execute()) {</span>
+            // wrapping the call in try-with-resources automatically closes the response
+<span class="fc" id="L132">            return checkResponse(response);</span>
+<span class="fc" id="L133">        } catch (IOException ex) {</span>
+<span class="fc" id="L134">            throw new SaiHttpException(&quot;Failed to put remote resource: &quot; + ex.getMessage());</span>
+        }
+    }
+
+    /**
+     * Perform an HTTP DELETE on the resource at &lt;code&gt;url&lt;/code&gt;.
+     * &lt;i&gt;ResponseBody is closed automatically&lt;/i&gt;.
+     * @param httpClient OkHttpClient to perform the DELETE with
+     * @param url URL of the resource to DELETE
+     * @param headers Optional OkHttp headers to include
+     * @return OkHttp Response
+     * @throws SaiHttpException
+     */
+    public static Response deleteResource(OkHttpClient httpClient, URL url, Headers headers) throws SaiHttpException {
+
+<span class="fc" id="L149">        Objects.requireNonNull(httpClient, &quot;Must provide an http client to access resource&quot;);</span>
+<span class="fc" id="L150">        Objects.requireNonNull(url, &quot;Must provide a target URL to access resource&quot;);</span>
+
+<span class="fc" id="L152">        Request.Builder requestBuilder = new Request.Builder();</span>
+<span class="fc" id="L153">        requestBuilder.url(url);</span>
+<span class="fc" id="L154">        requestBuilder.method( DELETE.getValue(), null);</span>
+<span class="fc bfc" id="L155" title="All 2 branches covered.">        if (headers != null) { requestBuilder.headers(headers); }</span>
+
+<span class="fc" id="L157">        try (Response response = httpClient.newCall(requestBuilder.build()).execute()) {</span>
+            // wrapping the call in try-with-resources automatically closes the response
+<span class="fc" id="L159">            return checkResponse(response);</span>
+<span class="fc" id="L160">        } catch (IOException ex) {</span>
+<span class="fc" id="L161">            throw new SaiHttpException(&quot;Failed to delete remote resource: &quot; + ex.getMessage());</span>
+        }
+
+    }
+
+    /**
+     * Calls {@link #deleteResource(OkHttpClient, URL, Headers)} without any additional headers supplied.
+     * @param httpClient OkHttpClient to perform the DELETE with
+     * @param url URL of the resource to DELETE
+     * @return OkHttp Response
+     * @throws SaiHttpException
+     */
+    public static Response deleteResource(OkHttpClient httpClient, URL url) throws SaiHttpException {
+<span class="fc" id="L174">        return deleteResource(httpClient, url, null);</span>
+    }
+
+    /**
+     * Perform an HTTP GET on an RDF resource at &lt;code&gt;url&lt;/code&gt;. Checks that the
+     * response is representative of an RDF resource.
+     * @param httpClient OkHttpClient to perform the GET with
+     * @param url URL of the resource to GET
+     * @return OkHttp Response
+     * @throws SaiHttpException
+     */
+    public static Response getRdfResource(OkHttpClient httpClient, URL url) throws SaiHttpException {
+<span class="fc" id="L186">        return checkRdfResponse(getResource(httpClient, url));</span>
+    }
+
+    /**
+     * Perform an HTTP GET on an RDF resource at &lt;code&gt;url&lt;/code&gt;. Checks that the
+     * response is representative of an RDF resource. Requires the resource to be found,
+     * or an exception is thrown.
+     * @param httpClient OkHttpClient to perform the GET with
+     * @param url URL of the resource to GET
+     * @return OkHttp Response
+     * @throws SaiHttpException
+     * @throws SaiHttpNotFoundException when no resource is found
+     */
+    public static Response getRequiredRdfResource(OkHttpClient httpClient, URL url) throws SaiHttpException, SaiHttpNotFoundException {
+<span class="nc" id="L200">        return checkRdfResponse(getRequiredResource(httpClient, url));</span>
+    }
+
+    /**
+     * Perform an HTTP GET on an RDF resource at &lt;code&gt;url&lt;/code&gt;. Checks that the
+     * response is representative of an RDF resource.
+     * @param httpClient OkHttpClient to perform the GET with
+     * @param url URL of the resource to GET
+     * @param headers Optional OkHttp headers to include
+     * @return OkHttp Response
+     * @throws SaiHttpException
+     */
+    public static Response getRdfResource(OkHttpClient httpClient, URL url, Headers headers) throws SaiHttpException {
+<span class="fc" id="L213">        return checkRdfResponse(getResource(httpClient, url, headers));</span>
+    }
+
+    /**
+     * Get a Jena RDF Model from the body of the OkHttp Response.
+     * @param response OkHttp Response
+     * @return Jena Model
+     * @throws SaiHttpException
+     */
+    public static Model getRdfModelFromResponse(Response response) throws SaiHttpException, SaiRdfException {
+<span class="fc" id="L223">        Objects.requireNonNull(response, &quot;Must provide a response to get RDF model from&quot;);</span>
+<span class="fc" id="L224">        checkRdfResponse(response);</span>
+        String body;
+<span class="fc" id="L226">        HttpUrl requestUrl = response.request().url();</span>
+<span class="fc" id="L227">        try { body = response.peekBody(Long.MAX_VALUE).string(); } catch (IOException ex) {</span>
+<span class="fc" id="L228">            throw new SaiHttpException(&quot;Failed to access response body&quot;);</span>
+<span class="fc" id="L229">        }</span>
+<span class="fc" id="L230">        return getModelFromString(requestUrlToUri(requestUrl), body, getContentType(response).getValue());</span>
+    }
+
+    /**
+     * Perform an HTTP PUT on the resource at &lt;code&gt;url&lt;/code&gt; using a serialized Jena
+     * Resource as the request body.
+     * @param httpClient OkHttpClient to perform the PUT with
+     * @param url URL of the resource to PUT
+     * @param resource Jena Resource for the request body
+     * @param contentType ContentType of the request
+     * @return OkHttp Response
+     * @throws SaiHttpException
+     */
+    public static Response putRdfResource(OkHttpClient httpClient, URL url, Resource resource, ContentType contentType) throws SaiHttpException, SaiRdfException {
+<span class="fc" id="L244">        return putRdfResource(httpClient, url, resource, contentType, null, null);</span>
+    }
+
+    /**
+     * Perform an HTTP PUT on the resource at &lt;code&gt;url&lt;/code&gt; using a serialized Jena
+     * Resource as the request body with a jsonLdContext
+     * @param httpClient OkHttpClient to perform the PUT with
+     * @param url URL of the resource to PUT
+     * @param resource Jena Resource for the request body
+     * @param contentType ContentType of the request
+     * @param jsonLdContext JSON-LD context string to include
+     * @return OkHttp Response
+     * @throws SaiHttpException
+     */
+    public static Response putRdfResource(OkHttpClient httpClient, URL url, Resource resource, ContentType contentType, String jsonLdContext) throws SaiHttpException, SaiRdfException {
+<span class="nc" id="L259">        return putRdfResource(httpClient, url, resource, contentType, jsonLdContext, null);</span>
+    }
+
+    /**
+     * Perform an HTTP PUT with optional headers on the resource at &lt;code&gt;url&lt;/code&gt; using a serialized Jena
+     * Resource as the request body.
+     * @param httpClient OkHttpClient to perform the PUT with
+     * @param url URL of the resource to PUT
+     * @param resource Jena Resource for the request body
+     * @param contentType ContentType of the request
+     * @param headers Optional OkHttp Headers
+     * @return OkHttp Response
+     * @throws SaiHttpException
+     */
+    public static Response putRdfResource(OkHttpClient httpClient, URL url, Resource resource, ContentType contentType, Headers headers) throws SaiHttpException, SaiRdfException {
+<span class="fc" id="L274">        return putRdfResource(httpClient, url, resource, contentType, null, headers);</span>
+    }
+
+    /**
+     * Perform an HTTP PUT with optional headers on the resource at &lt;code&gt;url&lt;/code&gt; using a serialized Jena
+     * Resource as the request body.
+     * @param httpClient OkHttpClient to perform the PUT with
+     * @param url URL of the resource to PUT
+     * @param resource Jena Resource for the request body
+     * @param contentType ContentType of the request
+     * @param jsonLdContext Optional JSON-LD context string to include
+     * @param headers Optional OkHttp Headers
+     * @return OkHttp Response
+     * @throws SaiHttpException
+     */
+    public static Response putRdfResource(OkHttpClient httpClient, URL url, Resource resource, ContentType contentType, String jsonLdContext, Headers headers) throws SaiHttpException, SaiRdfException {
+<span class="fc" id="L290">        Objects.requireNonNull(contentType, &quot;Must provide a content-type for the PUT request on an RDF document&quot;);</span>
+<span class="fc" id="L291">        String body = &quot;&quot;;</span>
+<span class="fc" id="L292">        Lang lang = getLangForContentType(contentType.getValue());</span>
+<span class="fc bfc" id="L293" title="All 2 branches covered.">        if (resource != null) {</span>
+<span class="pc bpc" id="L294" title="1 of 2 branches missed.">            if (lang.equals(Lang.JSONLD11)) {</span>
+<span class="nc" id="L295">                body = getJsonLdStringFromModel(resource.getModel(), jsonLdContext);</span>
+            } else {
+<span class="fc" id="L297">                body = getStringFromRdfModel(resource.getModel(), lang);</span>
+            }
+        }
+<span class="fc" id="L300">        return checkResponse(putResource(httpClient, url, headers, body, contentType));</span>
+    }
+
+    /**
+     * Perform an HTTP PUT on the resource at &lt;code&gt;url&lt;/code&gt; treated as a Basic Container,
+     * with a serialized Jena Resource as the request body.
+     * @param httpClient OkHttpClient to perform the PUT with
+     * @param url URL of the resource to PUT
+     * @param resource Jena Resource for the request body
+     * @return OkHttp Response
+     * @throws SaiHttpException
+     */
+    public static Response putRdfContainer(OkHttpClient httpClient, URL url, Resource resource, ContentType contentType, String jsonLdContext) throws SaiHttpException, SaiRdfException {
+<span class="fc" id="L313">        Headers headers = addLinkRelationHeader(LinkRelation.TYPE, LDP_BASIC_CONTAINER);</span>
+<span class="fc" id="L314">        return putRdfResource(httpClient, url, resource, contentType, jsonLdContext, headers);</span>
+    }
+
+    public static Response putRdfContainer(OkHttpClient httpClient, URL url, Resource resource, ContentType contentType) throws SaiHttpException, SaiRdfException {
+<span class="fc" id="L318">        return putRdfContainer(httpClient, url, resource, contentType, null);</span>
+    }
+
+    /**
+     * Set the HTTP header identified by &lt;code&gt;name&lt;/code&gt; with the provided &lt;code&gt;value&lt;/code&gt;. If
+     * &lt;code&gt;headers&lt;/code&gt; are provided, they will be included in the Headers returned. If
+     * the Header to set already exists in that set, it will be updated.
+     * @param name {@link HttpHeader} to set
+     * @param value Value to use for the header
+     * @param headers Optional OkHttp Headers to include
+     * @return Updated OkHttp Headers
+     */
+    public static Headers setHttpHeader(HttpHeader name, String value, Headers headers) {
+<span class="fc" id="L331">        Objects.requireNonNull(name, &quot;Must provide an http header to set&quot;);</span>
+<span class="fc" id="L332">        Objects.requireNonNull(value, &quot;Must provide a value for http header&quot;);</span>
+<span class="fc" id="L333">        Headers.Builder builder = new Headers.Builder();</span>
+<span class="fc bfc" id="L334" title="All 2 branches covered.">        if (headers != null) { builder.addAll(headers); }</span>
+<span class="fc" id="L335">        builder.set(name.getValue(), value);</span>
+<span class="fc" id="L336">        return builder.build();</span>
+    }
+
+    /**
+     * Set the HTTP header identified by &lt;code&gt;name&lt;/code&gt; with the provided &lt;code&gt;value&lt;/code&gt;.
+     * @param name {@link HttpHeader} to set
+     * @param value Value to use for the header
+     * @return Updated OkHttp Headers
+     */
+    public static Headers setHttpHeader(HttpHeader name, String value) {
+<span class="fc" id="L346">        return setHttpHeader(name, value, null);</span>
+    }
+
+    /**
+     * Add the HTTP header identified by &lt;code&gt;name&lt;/code&gt; with the provided &lt;code&gt;value&lt;/code&gt;.
+     * If &lt;code&gt;headers&lt;/code&gt; are provided, they will be included in the Headers returned.
+     * @param name {@link HttpHeader} to add
+     * @param value Value to use for the added header
+     * @param headers Optional OkHttp Headers to include
+     * @return Populated OkHttp Headers
+     */
+    public static Headers addHttpHeader(HttpHeader name, String value, Headers headers) {
+<span class="fc" id="L358">        Objects.requireNonNull(name, &quot;Must provide an http header to add&quot;);</span>
+<span class="fc" id="L359">        Objects.requireNonNull(value, &quot;Must provide a value for http header&quot;);</span>
+<span class="fc" id="L360">        Headers.Builder builder = new Headers.Builder();</span>
+<span class="fc bfc" id="L361" title="All 2 branches covered.">        if (headers != null) { builder.addAll(headers); }</span>
+<span class="fc" id="L362">        builder.add(name.getValue(), value);</span>
+<span class="fc" id="L363">        return builder.build();</span>
+    }
+
+    /**
+     * Add the HTTP header identified by &lt;code&gt;name&lt;/code&gt; with the provided &lt;code&gt;value&lt;/code&gt;.
+     * @param name {@link HttpHeader} to add
+     * @param value Value to use for the added header
+     * @return Populated OkHttp Headers
+     */
+    public static Headers addHttpHeader(HttpHeader name, String value) {
+<span class="fc" id="L373">        return addHttpHeader(name, value, null);</span>
+    }
+
+    /**
+     * Add an HTTP Link Relation header of &lt;code&gt;type&lt;/code&gt; with the provided &lt;code&gt;target&lt;/code&gt;.
+     * If &lt;code&gt;headers&lt;/code&gt; are provided, they will be included in the Headers returned.
+     * @see &lt;a href=&quot;https://www.rfc-editor.org/rfc/rfc8288.html&quot;&gt;RFC 8288 - Web Linking&lt;/a&gt;
+     * @param type Link relation type
+     * @param target Link relation target
+     * @param headers Optional OkHttp Headers to include
+     * @return Populated OkHttp Headers
+     */
+    public static Headers addLinkRelationHeader(LinkRelation type, String target, Headers headers) {
+<span class="fc" id="L386">        return addHttpHeader(LINK, getLinkRelationString(type, target), headers);</span>
+    }
+
+    /**
+     * Add an HTTP Link Relation header of &lt;code&gt;type&lt;/code&gt; with the provided &lt;code&gt;target&lt;/code&gt;.
+     * @see &lt;a href=&quot;https://www.rfc-editor.org/rfc/rfc8288.html&quot;&gt;RFC 8288 - Web Linking&lt;/a&gt;
+     * @param type Link relation type
+     * @param target Link relation target
+     * @return Populated OkHttp Headers
+     */
+    public static Headers addLinkRelationHeader(LinkRelation type, String target) {
+<span class="fc" id="L397">        return addLinkRelationHeader(type, target, null);</span>
+    }
+
+    /**
+     * Get a formatted HTTP Link Relation string in compliance with RFC 8288
+     * @param type Link relation type
+     * @param target Link relation target
+     * @return Formatted Link Relation string
+     */
+    public static String getLinkRelationString(LinkRelation type, String target) {
+<span class="fc" id="L407">        Objects.requireNonNull(type, &quot;Must provide a link relation type&quot;);</span>
+<span class="fc" id="L408">        Objects.requireNonNull(target, &quot;Must provide a link relation target&quot;);</span>
+<span class="fc" id="L409">        return &quot;&lt;&quot;+target+&quot;&gt;;&quot;+&quot; rel=\&quot;&quot;+type.getValue()+&quot;\&quot;&quot;;</span>
+    }
+
+    /**
+     * Check the provided &lt;code&gt;response&lt;/code&gt; for viability
+     * @param response Response to check
+     * @return Checked response
+     */
+    protected static Response checkResponse(Response response) {
+<span class="fc" id="L418">        Objects.requireNonNull(response, &quot;Do not expect to receive a null response to an HTTP client request&quot;);</span>
+<span class="fc" id="L419">        return response;</span>
+    }
+
+    /**
+     * Check the provided &lt;code&gt;response&lt;/code&gt; for viable for an RDF resource.
+     * @param response Response to check
+     * @return Checked response
+     * @throws SaiHttpException
+     */
+    protected static Response checkRdfResponse(Response response) throws SaiHttpException {
+<span class="fc" id="L429">        checkResponse(response);</span>
+        // if it isn't a successful response there's nothing to check, but leave it to higher
+        // levels of the stack to determine whether that is an exceptional condition
+<span class="pc bpc" id="L432" title="1 of 2 branches missed.">        if (!response.isSuccessful()) { return response; }</span>
+<span class="fc" id="L433">        ContentType contentType = getContentType(response);</span>
+<span class="fc bfc" id="L434" title="All 2 branches covered.">        if (!RDF_CONTENT_TYPES.contains(contentType)) {</span>
+<span class="fc" id="L435">            throw new SaiHttpException(&quot;Invalid Content-Type for RDF resource: &quot; + contentType);</span>
+        }
+<span class="fc" id="L437">        return response;</span>
+    }
+
+    /**
+     * Get the HTTP Content-Type of the response
+     * @param response Response to get Content-Type from
+     * @return {@link ContentType} of response
+     * @throws SaiHttpException
+     */
+    protected static ContentType getContentType(Response response) throws SaiHttpException {
+<span class="fc" id="L447">        Objects.requireNonNull(response, &quot;Must provide a response to get content type for&quot;);</span>
+<span class="fc bfc" id="L448" title="All 2 branches covered.">        if (response.header(CONTENT_TYPE.getValue()) == null) {</span>
+<span class="fc" id="L449">            throw new SaiHttpException(&quot;Content-type header is missing&quot;);</span>
+        }
+<span class="fc" id="L451">        String responseType = response.header(CONTENT_TYPE.getValue());</span>
+<span class="fc" id="L452">        ContentType contentType = ContentType.get(responseType);</span>
+<span class="fc bfc" id="L453" title="All 2 branches covered.">        if (contentType == null) { contentType = OCTET_STREAM; }</span>
+<span class="fc" id="L454">        return contentType;</span>
+    }
+
+    /**
+     * Wrap conversion from URL to URI which should never fail on a well-formed URL.
+     * @param url covert this URL to a URI
+     * @return IRI java native object for a URI (useful for Jena graph operations)
+     */
+    public static URI urlToUri(URL url) {
+<span class="fc" id="L463">        Objects.requireNonNull(url, &quot;Must provide a URL to convert&quot;);</span>
+        try {
+<span class="fc" id="L465">            return url.toURI();</span>
+<span class="fc" id="L466">        } catch (URISyntaxException ex) {</span>
+<span class="fc" id="L467">            throw new IllegalStateException(&quot;can't convert URL &lt;&quot; + url + &quot;&gt; to IRI: &quot; + ex);</span>
+        }
+    }
+
+    /**
+     * Convenience wrapper around urlToUri which takes the OkHttp HttpUrl type
+     * as input.
+     * @param url HttpUrl from OkHttp
+     * @return IRI java native object for a URI (useful for Jena graph operations)
+     */
+    public static URI requestUrlToUri(HttpUrl url) {
+<span class="fc" id="L478">        Objects.requireNonNull(url, &quot;Must provide a URL to convert&quot;);</span>
+<span class="fc" id="L479">        return urlToUri(url.url());</span>
+    }
+
+    /**
+     * Returns the scheme, domain name, port, and path of a URL, removing
+     * any query parameters or fragments.
+     * @param url to trim
+     * @return Base URL
+     */
+    public static URL urlToBase(URL url) throws SaiHttpException {
+<span class="fc" id="L489">        Objects.requireNonNull(url, &quot;Must provide a URL to convert&quot;);</span>
+        try {
+<span class="fc" id="L491">            URI uri = urlToUri(url);</span>
+<span class="fc bfc" id="L492" title="All 4 branches covered.">            if (uri.getFragment() == null &amp;&amp; uri.getQuery() == null) { return url; }</span>
+<span class="fc" id="L493">            URI trimmed = new URI(uri.getScheme(), uri.getHost(), uri.getPath(), null);</span>
+<span class="fc" id="L494">            return trimmed.toURL();</span>
+<span class="fc" id="L495">        } catch(MalformedURLException | URISyntaxException |IllegalStateException ex) {</span>
+<span class="fc" id="L496">            throw new SaiHttpException(&quot;Unable to convert URL to Base URL: &quot; + ex.getMessage());</span>
+        }
+    }
+
+    /**
+     * Converts a string to a URL
+     * @param urlString String to convert to URL
+     * @return Converted URL
+     * @throws SaiHttpException
+     */
+    public static URL stringToUrl(String urlString) throws SaiHttpException {
+<span class="fc" id="L507">        Objects.requireNonNull(urlString, &quot;Must provide a string to convert&quot;);</span>
+        try {
+<span class="fc" id="L509">            return new URL(urlString);</span>
+<span class="fc" id="L510">        } catch (MalformedURLException ex) {</span>
+<span class="fc" id="L511">            throw new SaiHttpException(&quot;Unable to convert String to URL: &quot; + ex.getMessage());</span>
+        }
+    }
+
+    /**
+     * Coverts a URI to a URL
+     * @param uri URI to convert
+     * @return Converted URL
+     * @throws SaiHttpException
+     */
+    public static URL uriToUrl(URI uri) throws SaiHttpException {
+<span class="fc" id="L522">        Objects.requireNonNull(uri, &quot;Must provide a URI to convert&quot;);</span>
+        try {
+<span class="nc" id="L524">            return uri.toURL();</span>
+<span class="fc" id="L525">        } catch (MalformedURLException ex) {</span>
+<span class="fc" id="L526">            throw new SaiHttpException(&quot;Unable to convert URI to URL: &quot; + ex.getMessage());</span>
+        }
+    }
+
+    /**
+     * Adds a child to the end of the path of &lt;code&gt;baseUrl&lt;/code&gt;
+     * @param baseUrl Base URL to append to
+     * @param child Child to add to the path
+     * @return URL with &lt;code&gt;child&lt;/code&gt; appended
+     * @throws SaiHttpException
+     */
+    public static URL addChildToUrlPath(URL baseUrl, String child) throws SaiHttpException {
+        try {
+<span class="fc" id="L539">            return new URL(baseUrl, child);</span>
+<span class="fc" id="L540">        } catch (MalformedURLException ex) {</span>
+<span class="fc" id="L541">            throw new SaiHttpException(&quot;Unable to append child &quot; + child + &quot;to URL path &quot; + baseUrl + &quot;: &quot; + ex.getMessage());</span>
+        }
+    }
+
+    /**
+     * Generate a failure message based on an OkHttp Response
+     * @param response OkHttp Response
+     * @return Failure message string
+     */
+    public static String getResponseFailureMessage(Response response) {
+<span class="fc" id="L551">        return &quot;HTTP &quot; + response.code() + &quot; &quot; + response.message() ;</span>
+    } 
+    
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.7.202105040129</span></div></body></html>
