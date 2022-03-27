@@ -63,7 +63,7 @@ public class HttpUtils {
             if (headers != null) { requestBuilder.headers(headers); }
             return checkResponse(httpClient.newCall(requestBuilder.build()).execute());
         } catch (IOException ex) {
-            throw new SaiHttpException("Failed to get remote resource: " + ex.getMessage());
+            throw new SaiHttpException("Failed to get remote resource at " + url, ex);
         }
     }
 
@@ -158,7 +158,7 @@ public class HttpUtils {
             // wrapping the call in try-with-resources automatically closes the response
             return checkResponse(response);
         } catch (IOException ex) {
-            throw new SaiHttpException("Failed to delete remote resource: " + ex.getMessage());
+            throw new SaiHttpException("Failed to delete remote resource at " + url, ex);
         }
 
     }
@@ -225,7 +225,7 @@ public class HttpUtils {
         String body;
         HttpUrl requestUrl = response.request().url();
         try { body = response.peekBody(Long.MAX_VALUE).string(); } catch (IOException ex) {
-            throw new SaiHttpException("Failed to access response body");
+            throw new SaiHttpException("Failed to access response body", ex);
         }
         return getModelFromString(requestUrlToUri(requestUrl), body, getContentType(response).getValue());
     }
@@ -464,7 +464,7 @@ public class HttpUtils {
         try {
             return url.toURI();
         } catch (URISyntaxException ex) {
-            throw new IllegalStateException("can't convert URL <" + url + "> to IRI: " + ex);
+            throw new IllegalStateException("can't convert URL <" + url + "> to IRI", ex);
         }
     }
 
@@ -492,8 +492,8 @@ public class HttpUtils {
             if (uri.getFragment() == null && uri.getQuery() == null) { return url; }
             URI trimmed = new URI(uri.getScheme(), uri.getHost(), uri.getPath(), null);
             return trimmed.toURL();
-        } catch(MalformedURLException | URISyntaxException |IllegalStateException ex) {
-            throw new SaiHttpException("Unable to convert URL to Base URL: " + ex.getMessage());
+        } catch(MalformedURLException | URISyntaxException | IllegalStateException ex) {
+            throw new SaiHttpException("Unable to convert URL to Base URL", ex);
         }
     }
 
@@ -508,7 +508,7 @@ public class HttpUtils {
         try {
             return new URL(urlString);
         } catch (MalformedURLException ex) {
-            throw new SaiHttpException("Unable to convert String to URL: " + ex.getMessage());
+            throw new SaiHttpException("Unable to convert String to URL", ex);
         }
     }
 
@@ -523,7 +523,7 @@ public class HttpUtils {
         try {
             return uri.toURL();
         } catch (MalformedURLException ex) {
-            throw new SaiHttpException("Unable to convert URI to URL: " + ex.getMessage());
+            throw new SaiHttpException("Unable to convert URI to URL", ex);
         }
     }
 

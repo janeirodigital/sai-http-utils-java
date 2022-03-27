@@ -22,7 +22,8 @@
         <junit.version>5.8.2</junit.version>
         <mockito.version>4.3.1</mockito.version>
         <okhttp.version>4.9.3</okhttp.version>
-        <mockwebserverplus-ext.version>0.9.0-SNAPSHOT</mockwebserverplus-ext.version>
+        <sai-rdf-utils.version>0.9.1</sai-rdf-utils.version>
+        <mockwebserverplus-ext.version>0.9.0</mockwebserverplus-ext.version>
         <sonar.organization>janeirodigital</sonar.organization>
         <sonar.host.url>https://sonarcloud.io</sonar.host.url>
     </properties>
@@ -53,7 +54,7 @@
         <dependency>
             <groupId>com.janeirodigital</groupId>
             <artifactId>sai-rdf-utils-java</artifactId>
-            <version>0.9.0-SNAPSHOT</version>
+            <version>${sai-rdf-utils.version}</version>
         </dependency>
         <dependency>
             <groupId>org.slf4j</groupId>

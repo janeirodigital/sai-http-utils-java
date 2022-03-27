@@ -1,7 +1,0 @@
-com/janeirodigital/sai/httputils/LinkRelation.class
-com/janeirodigital/sai/httputils/HttpHeader.class
-com/janeirodigital/sai/httputils/HttpUtils.class
-com/janeirodigital/sai/httputils/ContentType.class
-com/janeirodigital/sai/httputils/SaiHttpException.class
-com/janeirodigital/sai/httputils/SaiHttpNotFoundException.class
-com/janeirodigital/sai/httputils/HttpMethod.class

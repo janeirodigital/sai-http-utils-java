@@ -29,7 +29,7 @@ import static com.janeirodigital.sai.httputils.ContentType.TEXT_TURTLE;
 import static com.janeirodigital.sai.httputils.HttpHeader.AUTHORIZATION;
 import static com.janeirodigital.sai.httputils.HttpHeader.CONTENT_TYPE;
 import static com.janeirodigital.sai.httputils.HttpUtils.*;
-import static com.janeirodigital.sai.rdfutils.RdfUtils.getModelFromString;
+import static com.janeirodigital.sai.rdfutils.RdfUtils.*;
 import static org.junit.jupiter.api.Assertions.*;
 
 public class HttpUtilsTests {
@@ -52,6 +52,7 @@ public class HttpUtilsTests {
         mockOnGet(dispatcher, "/not-found", "404");
         mockOnPut(dispatcher, "/put-create-resource", "201");
         mockOnPut(dispatcher, "/put-update-resource", "204");
+        mockOnPut(dispatcher, "/put-jsonld-resource", "204");
 
         // Initialize the Mock Web Server and assign the initialized dispatcher
         server = new MockWebServer();
@@ -99,10 +100,31 @@ public class HttpUtilsTests {
     }
 
     @Test
+    @DisplayName("Get a missing RDF resource")
+    void GetMissingRdfResource() throws SaiHttpException {
+        Response response = getRdfResource(httpClient, toUrl(server, "/not-found"));
+        assertFalse(response.isSuccessful());
+        assertEquals(404, response.code());
+        response.close();
+    }
+
+    @Test
     @DisplayName("Get an RDF resource")
-    void getRdfHttpResource() throws SaiHttpException, SaiRdfException {
+    void getRdfHttpResource() throws SaiHttpException, SaiRdfException, SaiHttpNotFoundException {
         URL url = toUrl(server, "/get-rdf-resource-ttl");
         Response response = getRdfResource(httpClient, url);
+        assertTrue(response.isSuccessful());
+        Model model = getRdfModelFromResponse(response);
+        assertNotNull(model);
+        assertNotNull(model.getResource(url.toString()));
+        response.close();
+    }
+
+    @Test
+    @DisplayName("Get a Required RDF resource")
+    void getRequiredRdfHttpResource() throws SaiHttpException, SaiRdfException, SaiHttpNotFoundException {
+        URL url = toUrl(server, "/get-rdf-resource-ttl");
+        Response response = getRequiredRdfResource(httpClient, url);
         assertTrue(response.isSuccessful());
         Model model = getRdfModelFromResponse(response);
         assertNotNull(model);
@@ -229,6 +251,17 @@ public class HttpUtilsTests {
         response = putRdfResource(httpClient, url, null, TEXT_TURTLE, headers);
         assertTrue(response.isSuccessful());
         response.close();
+    }
+
+    @Test
+    @DisplayName("Update a JSON-LD RDF resource")
+    void updateJsonLdHttpResource() throws SaiHttpException, SaiRdfException {
+        URL url = toUrl(server, "/put-jsonld-resource");
+        Model readableModel = getModelFromString(urlToUri(url), getJsonLdString(url), LD_JSON);
+        Resource resource = getResourceFromModel(readableModel, url);
+        // Update with resource content
+        Response response = putRdfResource(httpClient, url, resource, ContentType.LD_JSON, "");
+        assertTrue(response.isSuccessful());
     }
 
     @Test
@@ -374,6 +407,22 @@ public class HttpUtilsTests {
     }
 
     @Test
+    @DisplayName("Get HTTP Method by name")
+    void testGetHttpMethodByName() {
+        HttpMethod putMethod = HttpMethod.get("PUT");
+        assertNotNull(putMethod);
+        assertEquals(HttpMethod.PUT, putMethod);
+    }
+
+    @Test
+    @DisplayName("Get HTTP Header by name")
+    void testGetHttpHeaderByName() {
+        HttpHeader authHeader = HttpHeader.get("Authorization");
+        assertNotNull(authHeader);
+        assertEquals(AUTHORIZATION, authHeader);
+    }
+
+    @Test
     @DisplayName("Fail to get the base of a URL - malformed URL")
     void failToConvertUrlToBase() throws MalformedURLException {
         URL malformed = new URL("http://www.solidproject.org?q=something&something=<something+else>");
@@ -386,6 +435,13 @@ public class HttpUtilsTests {
     void convertStringToUrl() throws SaiHttpException, MalformedURLException {
         URL expected = new URL("http://www.solidproject.org");
         assertEquals(expected, stringToUrl("http://www.solidproject.org"));
+    }
+
+    @Test
+    @DisplayName("Convert URI to URL")
+    void convertUriToUrl() throws SaiHttpException, MalformedURLException {
+        URL expected = new URL("http://www.solidproject.org");
+        assertEquals(expected, uriToUrl(URI.create("http://www.solidproject.org")));
     }
 
     @Test
@@ -451,6 +507,17 @@ public class HttpUtilsTests {
                 "    ex:name \"Great Validations\" ;\n" +
                 "    ex:created_at \"2021-04-04T20:15:47.000Z\"^^xsd:dateTime ;\n" +
                 "    ex:hasMilestone </data/projects/project-1/milestone-3/#milestone> .";
+    }
+
+    private String getJsonLdString(URL baseUrl) {
+        return "{\n" +
+                "  \"@context\": {\n" +
+                "    \"name\": \"http://schema.org/name\",\n" +
+                "    \"id\": \"@id\"\n" +
+                "  },\n" +
+                "  \"name\": \"Justin B\",\n" +
+                "  \"id\": \"" + baseUrl + "\"\n" +
+                "}";
     }
     
 }
