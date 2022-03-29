@@ -219,15 +219,17 @@ public class HttpUtils {
      * @return Jena Model
      * @throws SaiHttpException
      */
-    public static Model getRdfModelFromResponse(Response response) throws SaiHttpException, SaiRdfException {
+    public static Model getRdfModelFromResponse(Response response) throws SaiHttpException {
         Objects.requireNonNull(response, "Must provide a response to get RDF model from");
         checkRdfResponse(response);
         String body;
         HttpUrl requestUrl = response.request().url();
-        try { body = response.peekBody(Long.MAX_VALUE).string(); } catch (IOException ex) {
-            throw new SaiHttpException("Failed to access response body", ex);
+        try {
+            body = response.peekBody(Long.MAX_VALUE).string();
+            return getModelFromString(requestUrlToUri(requestUrl), body, getContentType(response).getValue());
+        } catch (IOException | SaiRdfException ex) {
+            throw new SaiHttpException("Failed to convert response body to rdf graph", ex);
         }
-        return getModelFromString(requestUrlToUri(requestUrl), body, getContentType(response).getValue());
     }
 
     /**
@@ -240,7 +242,7 @@ public class HttpUtils {
      * @return OkHttp Response
      * @throws SaiHttpException
      */
-    public static Response putRdfResource(OkHttpClient httpClient, URL url, Resource resource, ContentType contentType) throws SaiHttpException, SaiRdfException {
+    public static Response putRdfResource(OkHttpClient httpClient, URL url, Resource resource, ContentType contentType) throws SaiHttpException {
         return putRdfResource(httpClient, url, resource, contentType, null, null);
     }
 
@@ -255,7 +257,7 @@ public class HttpUtils {
      * @return OkHttp Response
      * @throws SaiHttpException
      */
-    public static Response putRdfResource(OkHttpClient httpClient, URL url, Resource resource, ContentType contentType, String jsonLdContext) throws SaiHttpException, SaiRdfException {
+    public static Response putRdfResource(OkHttpClient httpClient, URL url, Resource resource, ContentType contentType, String jsonLdContext) throws SaiHttpException {
         return putRdfResource(httpClient, url, resource, contentType, jsonLdContext, null);
     }
 
@@ -270,7 +272,7 @@ public class HttpUtils {
      * @return OkHttp Response
      * @throws SaiHttpException
      */
-    public static Response putRdfResource(OkHttpClient httpClient, URL url, Resource resource, ContentType contentType, Headers headers) throws SaiHttpException, SaiRdfException {
+    public static Response putRdfResource(OkHttpClient httpClient, URL url, Resource resource, ContentType contentType, Headers headers) throws SaiHttpException {
         return putRdfResource(httpClient, url, resource, contentType, null, headers);
     }
 
@@ -286,16 +288,20 @@ public class HttpUtils {
      * @return OkHttp Response
      * @throws SaiHttpException
      */
-    public static Response putRdfResource(OkHttpClient httpClient, URL url, Resource resource, ContentType contentType, String jsonLdContext, Headers headers) throws SaiHttpException, SaiRdfException {
+    public static Response putRdfResource(OkHttpClient httpClient, URL url, Resource resource, ContentType contentType, String jsonLdContext, Headers headers) throws SaiHttpException {
         Objects.requireNonNull(contentType, "Must provide a content-type for the PUT request on an RDF document");
         String body = "";
         Lang lang = getLangForContentType(contentType.getValue());
-        if (resource != null) {
-            if (lang.equals(Lang.JSONLD11)) {
-                body = getJsonLdStringFromModel(resource.getModel(), jsonLdContext);
-            } else {
-                body = getStringFromRdfModel(resource.getModel(), lang);
+        try {
+            if (resource != null) {
+                if (lang.equals(Lang.JSONLD11)) {
+                    body = getJsonLdStringFromModel(resource.getModel(), jsonLdContext);
+                } else {
+                    body = getStringFromRdfModel(resource.getModel(), lang);
+                }
             }
+        } catch (SaiRdfException ex) {
+            throw new SaiHttpException("Unable to get string from rdf model", ex);
         }
         return checkResponse(putResource(httpClient, url, headers, body, contentType));
     }
@@ -309,12 +315,12 @@ public class HttpUtils {
      * @return OkHttp Response
      * @throws SaiHttpException
      */
-    public static Response putRdfContainer(OkHttpClient httpClient, URL url, Resource resource, ContentType contentType, String jsonLdContext) throws SaiHttpException, SaiRdfException {
+    public static Response putRdfContainer(OkHttpClient httpClient, URL url, Resource resource, ContentType contentType, String jsonLdContext) throws SaiHttpException {
         Headers headers = addLinkRelationHeader(LinkRelation.TYPE, LDP_BASIC_CONTAINER);
         return putRdfResource(httpClient, url, resource, contentType, jsonLdContext, headers);
     }
 
-    public static Response putRdfContainer(OkHttpClient httpClient, URL url, Resource resource, ContentType contentType) throws SaiHttpException, SaiRdfException {
+    public static Response putRdfContainer(OkHttpClient httpClient, URL url, Resource resource, ContentType contentType) throws SaiHttpException {
         return putRdfContainer(httpClient, url, resource, contentType, null);
     }
 

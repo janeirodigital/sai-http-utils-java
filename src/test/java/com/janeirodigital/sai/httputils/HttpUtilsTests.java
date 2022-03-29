@@ -1,6 +1,7 @@
 package com.janeirodigital.sai.httputils;
 
 import com.janeirodigital.mockwebserver.RequestMatchingFixtureDispatcher;
+import com.janeirodigital.sai.rdfutils.RdfUtils;
 import com.janeirodigital.sai.rdfutils.SaiRdfException;
 import okhttp3.Headers;
 import okhttp3.OkHttpClient;
@@ -12,6 +13,8 @@ import okio.Buffer;
 import org.apache.jena.rdf.model.Model;
 import org.apache.jena.rdf.model.Resource;
 import org.junit.jupiter.api.*;
+import org.mockito.MockedStatic;
+import org.mockito.Mockito;
 
 import java.io.IOException;
 import java.net.MalformedURLException;
@@ -31,6 +34,8 @@ import static com.janeirodigital.sai.httputils.HttpHeader.CONTENT_TYPE;
 import static com.janeirodigital.sai.httputils.HttpUtils.*;
 import static com.janeirodigital.sai.rdfutils.RdfUtils.*;
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 
 public class HttpUtilsTests {
 
@@ -262,6 +267,19 @@ public class HttpUtilsTests {
         // Update with resource content
         Response response = putRdfResource(httpClient, url, resource, ContentType.LD_JSON, "");
         assertTrue(response.isSuccessful());
+    }
+
+    @Test
+    @DisplayName("Fail to update a JSON-LD RDF resource")
+    void failToUpdateJsonLdHttpResource() throws SaiRdfException {
+        URL url = toUrl(server, "/put-jsonld-resource");
+        Model readableModel = getModelFromString(urlToUri(url), getJsonLdString(url), LD_JSON);
+        Resource resource = getResourceFromModel(readableModel, url);
+        try (MockedStatic<RdfUtils> mockUtils = Mockito.mockStatic(RdfUtils.class, Mockito.CALLS_REAL_METHODS)) {
+            mockUtils.when(() -> RdfUtils.getJsonLdStringFromModel(any(Model.class), anyString())).thenThrow(SaiRdfException.class);
+            assertThrows(SaiHttpException.class, () -> putRdfResource(httpClient, url, resource, ContentType.LD_JSON, ""));
+        }
+
     }
 
     @Test
