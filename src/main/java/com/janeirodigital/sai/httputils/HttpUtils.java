@@ -160,7 +160,6 @@ public class HttpUtils {
         } catch (IOException ex) {
             throw new SaiHttpException("Failed to delete remote resource at " + uri, ex);
         }
-
     }
 
     /**
@@ -535,16 +534,17 @@ public class HttpUtils {
 
     /**
      * Adds a child to the end of the path of <code>baseUrl</code>
-     * @param baseUrl Base URL to append to
+     * @param baseUri Base URL to append to
      * @param child Child to add to the path
-     * @return URL with <code>child</code> appended
+     * @return URI with <code>child</code> appended
      * @throws SaiHttpException
      */
-    public static URL addChildToUrlPath(URL baseUrl, String child) throws SaiHttpException {
+    public static URI addChildToUriPath(URI baseUri, String child) throws SaiHttpException {
         try {
-            return new URL(baseUrl, child);
-        } catch (MalformedURLException ex) {
-            throw new SaiHttpException("Unable to append child " + child + "to URL path " + baseUrl + ": " + ex.getMessage());
+            URL url = new URL(baseUri.toURL(), child);
+            return url.toURI();
+        } catch (MalformedURLException | URISyntaxException ex) {
+            throw new SaiHttpException("Unable to append child " + child + "to URL path " + baseUri + ": " + ex.getMessage());
         }
     }
 

@@ -19,6 +19,7 @@ import org.mockito.Mockito;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.List;
 import java.util.Map;
@@ -325,9 +326,7 @@ class HttpUtilsTests {
         queuingServer.enqueue(new MockResponse()
                 .setBody(new Buffer().write(new byte[4096]))
                 .setSocketPolicy(SocketPolicy.DISCONNECT_AT_START));
-        assertThrows(SaiHttpException.class, () -> {
-            deleteResource(httpClient, toMockUri(queuingServer, "/delete-resource-io"));
-        });
+        assertThrows(SaiHttpException.class, () -> { deleteResource(httpClient, toMockUri(queuingServer, "/delete-resource-io")); });
     }
 
     @Test
@@ -475,18 +474,18 @@ class HttpUtilsTests {
     }
 
     @Test
-    @DisplayName("Add child to URL Path")
-    void testAddChildToUrlPath() throws SaiHttpException, MalformedURLException {
-        URL base = new URL("http://www.solidproject.org/");
-        URL added = addChildToUrlPath(base, "child");
+    @DisplayName("Add child to URI Path")
+    void testAddChildToUriPath() throws SaiHttpException, URISyntaxException {
+        URI base = new URI("http://www.solidproject.org/");
+        URI added = addChildToUriPath(base, "child");
         assertEquals("http://www.solidproject.org/child", added.toString());
     }
 
     @Test
-    @DisplayName("Fail to add child to URL path - malformed URL")
-    void failToAddChildToUrlPath() throws MalformedURLException {
-        URL base = new URL("http://www.solidproject.org/");
-        assertThrows(SaiHttpException.class, () -> addChildToUrlPath(base, "somescheme://what/"));
+    @DisplayName("Fail to add child to URL path - malformed URI")
+    void failToAddChildToUriPath() throws URISyntaxException {
+        URI base = new URI("http://www.solidproject.org/");
+        assertThrows(SaiHttpException.class, () -> addChildToUriPath(base, "somescheme:{}}what/"));
     }
 
     private String getHtmlBody() {
