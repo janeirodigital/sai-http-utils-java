@@ -42,57 +42,57 @@ public class HttpUtils {
     private HttpUtils() { }
 
     /**
-     * Perform an HTTP GET on the resource at <code>url</code>.
+     * Perform an HTTP GET on the resource at <code>uri</code>.
      * The response MUST be closed outside of this call. The body of the response
      * is returned as a one-shot stream, and <b>MUST BE CLOSED</b> separately
      * by the caller.
      * @see <a href="https://square.github.io/okhttp/4.x/okhttp/okhttp3/-response-body/#the-response-body-must-be-closed">OkHttp - Closing the Response Body</a>
      * @param httpClient OkHttpClient to perform the GET with
-     * @param url URL of the resource to GET
+     * @param uri URI of the resource to GET
      * @param headers Optional OkHttp Headers to include
      * @return OkHttp Response
      * @throws SaiHttpException
      */
-    public static Response getResource(OkHttpClient httpClient, URL url, Headers headers) throws SaiHttpException {
+    public static Response getResource(OkHttpClient httpClient, URI uri, Headers headers) throws SaiHttpException {
         Objects.requireNonNull(httpClient, "Must provide an http client to access resource");
-        Objects.requireNonNull(url, "Must provide a target URL to access resource");
+        Objects.requireNonNull(uri, "Must provide a target URI to access resource");
         try {
             Request.Builder requestBuilder = new Request.Builder();
-            requestBuilder.url(url);
+            requestBuilder.url(uriToUrl(uri));
             requestBuilder.method(GET.getValue(), null);
             if (headers != null) { requestBuilder.headers(headers); }
             return checkResponse(httpClient.newCall(requestBuilder.build()).execute());
         } catch (IOException ex) {
-            throw new SaiHttpException("Failed to get remote resource at " + url, ex);
+            throw new SaiHttpException("Failed to get remote resource at " + uri, ex);
         }
     }
 
     /**
-     * Calls {@link #getResource(OkHttpClient, URL, Headers)} without any additional
+     * Calls {@link #getResource(OkHttpClient, URI, Headers)} without any additional
      * headers supplied.
      * @param httpClient OkHttpClient to perform the GET with
-     * @param url URL of the resource to GET
+     * @param uri URI of the resource to GET
      * @return OkHttp Response
      * @throws SaiHttpException
      */
-    public static Response getResource(OkHttpClient httpClient, URL url) throws SaiHttpException {
-        return getResource(httpClient, url, null);
+    public static Response getResource(OkHttpClient httpClient, URI uri) throws SaiHttpException {
+        return getResource(httpClient, uri, null);
     }
 
     /**
-     * Perform an HTTP GET on the resource at <code>url</code>, and throws an exception if the resource
+     * Perform an HTTP GET on the resource at <code>uri</code>, and throws an exception if the resource
      * cannot be found or the response is otherwise unsuccessful. The body of the response
      * is returned as a one-shot stream, and <b>MUST BE CLOSED</b> separately
      * by the caller.
      * @see <a href="https://square.github.io/okhttp/4.x/okhttp/okhttp3/-response-body/#the-response-body-must-be-closed">OkHttp - Closing the Response Body</a>
      * @param httpClient OkHttpClient to perform the GET with
-     * @param url URL of the resource to GET
+     * @param uri URI of the resource to GET
      * @return OkHttp Response
      * @throws SaiHttpException
      * @throws SaiHttpNotFoundException
      */
-    public static Response getRequiredResource(OkHttpClient httpClient, URL url) throws SaiHttpException, SaiHttpNotFoundException {
-        Response response = getResource(httpClient, url);
+    public static Response getRequiredResource(OkHttpClient httpClient, URI uri) throws SaiHttpException, SaiHttpNotFoundException {
+        Response response = getResource(httpClient, uri);
         if (!response.isSuccessful()) {
             if (response.code() == 404) {
                 throw new SaiHttpNotFoundException("No resource found at " + response.request().url());
@@ -104,24 +104,24 @@ public class HttpUtils {
     }
 
     /**
-     * Perform an HTTP PUT on the resource at <code>url</code>.
+     * Perform an HTTP PUT on the resource at <code>uri</code>.
      * <i>ResponseBody is closed automatically</i>.
      * @param httpClient OkHttpClient to perform the PUT with
-     * @param url URL of the resource to PUT
+     * @param uri URI of the resource to PUT
      * @param headers Optional OkHttp Headers to include
      * @param body Body of the PUT request
      * @param contentType {@link ContentType} of the PUT request
      * @return OkHttp Response
      * @throws SaiHttpException
      */
-    public static Response putResource(OkHttpClient httpClient, URL url, Headers headers, String body, ContentType contentType) throws SaiHttpException {
+    public static Response putResource(OkHttpClient httpClient, URI uri, Headers headers, String body, ContentType contentType) throws SaiHttpException {
 
         Objects.requireNonNull(httpClient, "Must provide an http client to access resource");
-        Objects.requireNonNull(url, "Must provide a target URL to access resource");
+        Objects.requireNonNull(uri, "Must provide a target URI to access resource");
         Objects.requireNonNull(contentType, "Must provide a content type to create resource");
 
         Request.Builder requestBuilder = new Request.Builder();
-        requestBuilder.url(url);
+        requestBuilder.url(uriToUrl(uri));
         if (body == null) { body = ""; }
         RequestBody requestBody = RequestBody.create(body, MediaType.get(contentType.getValue()));
         requestBuilder.method(PUT.getValue(), requestBody);
@@ -136,21 +136,21 @@ public class HttpUtils {
     }
 
     /**
-     * Perform an HTTP DELETE on the resource at <code>url</code>.
+     * Perform an HTTP DELETE on the resource at <code>uri</code>.
      * <i>ResponseBody is closed automatically</i>.
      * @param httpClient OkHttpClient to perform the DELETE with
-     * @param url URL of the resource to DELETE
+     * @param uri URI of the resource to DELETE
      * @param headers Optional OkHttp headers to include
      * @return OkHttp Response
      * @throws SaiHttpException
      */
-    public static Response deleteResource(OkHttpClient httpClient, URL url, Headers headers) throws SaiHttpException {
+    public static Response deleteResource(OkHttpClient httpClient, URI uri, Headers headers) throws SaiHttpException {
 
         Objects.requireNonNull(httpClient, "Must provide an http client to access resource");
-        Objects.requireNonNull(url, "Must provide a target URL to access resource");
+        Objects.requireNonNull(uri, "Must provide a target URI to access resource");
 
         Request.Builder requestBuilder = new Request.Builder();
-        requestBuilder.url(url);
+        requestBuilder.url(uriToUrl(uri));
         requestBuilder.method( DELETE.getValue(), null);
         if (headers != null) { requestBuilder.headers(headers); }
 
@@ -158,59 +158,58 @@ public class HttpUtils {
             // wrapping the call in try-with-resources automatically closes the response
             return checkResponse(response);
         } catch (IOException ex) {
-            throw new SaiHttpException("Failed to delete remote resource at " + url, ex);
+            throw new SaiHttpException("Failed to delete remote resource at " + uri, ex);
         }
-
     }
 
     /**
-     * Calls {@link #deleteResource(OkHttpClient, URL, Headers)} without any additional headers supplied.
+     * Calls {@link #deleteResource(OkHttpClient, URI, Headers)} without any additional headers supplied.
      * @param httpClient OkHttpClient to perform the DELETE with
-     * @param url URL of the resource to DELETE
+     * @param uri URI of the resource to DELETE
      * @return OkHttp Response
      * @throws SaiHttpException
      */
-    public static Response deleteResource(OkHttpClient httpClient, URL url) throws SaiHttpException {
-        return deleteResource(httpClient, url, null);
+    public static Response deleteResource(OkHttpClient httpClient, URI uri) throws SaiHttpException {
+        return deleteResource(httpClient, uri, null);
     }
 
     /**
-     * Perform an HTTP GET on an RDF resource at <code>url</code>. Checks that the
+     * Perform an HTTP GET on an RDF resource at <code>uri</code>. Checks that the
      * response is representative of an RDF resource.
      * @param httpClient OkHttpClient to perform the GET with
-     * @param url URL of the resource to GET
+     * @param uri URI of the resource to GET
      * @return OkHttp Response
      * @throws SaiHttpException
      */
-    public static Response getRdfResource(OkHttpClient httpClient, URL url) throws SaiHttpException {
-        return checkRdfResponse(getResource(httpClient, url));
+    public static Response getRdfResource(OkHttpClient httpClient, URI uri) throws SaiHttpException {
+        return checkRdfResponse(getResource(httpClient, uri));
     }
 
     /**
-     * Perform an HTTP GET on an RDF resource at <code>url</code>. Checks that the
+     * Perform an HTTP GET on an RDF resource at <code>uri</code>. Checks that the
      * response is representative of an RDF resource. Requires the resource to be found,
      * or an exception is thrown.
      * @param httpClient OkHttpClient to perform the GET with
-     * @param url URL of the resource to GET
+     * @param uri URI of the resource to GET
      * @return OkHttp Response
      * @throws SaiHttpException
      * @throws SaiHttpNotFoundException when no resource is found
      */
-    public static Response getRequiredRdfResource(OkHttpClient httpClient, URL url) throws SaiHttpException, SaiHttpNotFoundException {
-        return checkRdfResponse(getRequiredResource(httpClient, url));
+    public static Response getRequiredRdfResource(OkHttpClient httpClient, URI uri) throws SaiHttpException, SaiHttpNotFoundException {
+        return checkRdfResponse(getRequiredResource(httpClient, uri));
     }
 
     /**
-     * Perform an HTTP GET on an RDF resource at <code>url</code>. Checks that the
+     * Perform an HTTP GET on an RDF resource at <code>uri</code>. Checks that the
      * response is representative of an RDF resource.
      * @param httpClient OkHttpClient to perform the GET with
-     * @param url URL of the resource to GET
+     * @param uri URI of the resource to GET
      * @param headers Optional OkHttp headers to include
      * @return OkHttp Response
      * @throws SaiHttpException
      */
-    public static Response getRdfResource(OkHttpClient httpClient, URL url, Headers headers) throws SaiHttpException {
-        return checkRdfResponse(getResource(httpClient, url, headers));
+    public static Response getRdfResource(OkHttpClient httpClient, URI uri, Headers headers) throws SaiHttpException {
+        return checkRdfResponse(getResource(httpClient, uri, headers));
     }
 
     /**
@@ -233,54 +232,54 @@ public class HttpUtils {
     }
 
     /**
-     * Perform an HTTP PUT on the resource at <code>url</code> using a serialized Jena
+     * Perform an HTTP PUT on the resource at <code>uri</code> using a serialized Jena
      * Resource as the request body.
      * @param httpClient OkHttpClient to perform the PUT with
-     * @param url URL of the resource to PUT
+     * @param uri URI of the resource to PUT
      * @param resource Jena Resource for the request body
      * @param contentType ContentType of the request
      * @return OkHttp Response
      * @throws SaiHttpException
      */
-    public static Response putRdfResource(OkHttpClient httpClient, URL url, Resource resource, ContentType contentType) throws SaiHttpException {
-        return putRdfResource(httpClient, url, resource, contentType, null, null);
+    public static Response putRdfResource(OkHttpClient httpClient, URI uri, Resource resource, ContentType contentType) throws SaiHttpException {
+        return putRdfResource(httpClient, uri, resource, contentType, null, null);
     }
 
     /**
-     * Perform an HTTP PUT on the resource at <code>url</code> using a serialized Jena
+     * Perform an HTTP PUT on the resource at <code>uri</code> using a serialized Jena
      * Resource as the request body with a jsonLdContext
      * @param httpClient OkHttpClient to perform the PUT with
-     * @param url URL of the resource to PUT
+     * @param uri URI of the resource to PUT
      * @param resource Jena Resource for the request body
      * @param contentType ContentType of the request
      * @param jsonLdContext JSON-LD context string to include
      * @return OkHttp Response
      * @throws SaiHttpException
      */
-    public static Response putRdfResource(OkHttpClient httpClient, URL url, Resource resource, ContentType contentType, String jsonLdContext) throws SaiHttpException {
-        return putRdfResource(httpClient, url, resource, contentType, jsonLdContext, null);
+    public static Response putRdfResource(OkHttpClient httpClient, URI uri, Resource resource, ContentType contentType, String jsonLdContext) throws SaiHttpException {
+        return putRdfResource(httpClient, uri, resource, contentType, jsonLdContext, null);
     }
 
     /**
-     * Perform an HTTP PUT with optional headers on the resource at <code>url</code> using a serialized Jena
+     * Perform an HTTP PUT with optional headers on the resource at <code>uri</code> using a serialized Jena
      * Resource as the request body.
      * @param httpClient OkHttpClient to perform the PUT with
-     * @param url URL of the resource to PUT
+     * @param uri URI of the resource to PUT
      * @param resource Jena Resource for the request body
      * @param contentType ContentType of the request
      * @param headers Optional OkHttp Headers
      * @return OkHttp Response
      * @throws SaiHttpException
      */
-    public static Response putRdfResource(OkHttpClient httpClient, URL url, Resource resource, ContentType contentType, Headers headers) throws SaiHttpException {
-        return putRdfResource(httpClient, url, resource, contentType, null, headers);
+    public static Response putRdfResource(OkHttpClient httpClient, URI uri, Resource resource, ContentType contentType, Headers headers) throws SaiHttpException {
+        return putRdfResource(httpClient, uri, resource, contentType, null, headers);
     }
 
     /**
-     * Perform an HTTP PUT with optional headers on the resource at <code>url</code> using a serialized Jena
+     * Perform an HTTP PUT with optional headers on the resource at <code>uri</code> using a serialized Jena
      * Resource as the request body.
      * @param httpClient OkHttpClient to perform the PUT with
-     * @param url URL of the resource to PUT
+     * @param uri URI of the resource to PUT
      * @param resource Jena Resource for the request body
      * @param contentType ContentType of the request
      * @param jsonLdContext Optional JSON-LD context string to include
@@ -288,7 +287,7 @@ public class HttpUtils {
      * @return OkHttp Response
      * @throws SaiHttpException
      */
-    public static Response putRdfResource(OkHttpClient httpClient, URL url, Resource resource, ContentType contentType, String jsonLdContext, Headers headers) throws SaiHttpException {
+    public static Response putRdfResource(OkHttpClient httpClient, URI uri, Resource resource, ContentType contentType, String jsonLdContext, Headers headers) throws SaiHttpException {
         Objects.requireNonNull(contentType, "Must provide a content-type for the PUT request on an RDF document");
         String body = "";
         Lang lang = getLangForContentType(contentType.getValue());
@@ -303,25 +302,25 @@ public class HttpUtils {
         } catch (SaiRdfException ex) {
             throw new SaiHttpException("Unable to get string from rdf model", ex);
         }
-        return checkResponse(putResource(httpClient, url, headers, body, contentType));
+        return checkResponse(putResource(httpClient, uri, headers, body, contentType));
     }
 
     /**
-     * Perform an HTTP PUT on the resource at <code>url</code> treated as a Basic Container,
+     * Perform an HTTP PUT on the resource at <code>uri</code> treated as a Basic Container,
      * with a serialized Jena Resource as the request body.
      * @param httpClient OkHttpClient to perform the PUT with
-     * @param url URL of the resource to PUT
+     * @param uri URI of the resource to PUT
      * @param resource Jena Resource for the request body
      * @return OkHttp Response
      * @throws SaiHttpException
      */
-    public static Response putRdfContainer(OkHttpClient httpClient, URL url, Resource resource, ContentType contentType, String jsonLdContext) throws SaiHttpException {
+    public static Response putRdfContainer(OkHttpClient httpClient, URI uri, Resource resource, ContentType contentType, String jsonLdContext) throws SaiHttpException {
         Headers headers = addLinkRelationHeader(LinkRelation.TYPE, LDP_BASIC_CONTAINER);
-        return putRdfResource(httpClient, url, resource, contentType, jsonLdContext, headers);
+        return putRdfResource(httpClient, uri, resource, contentType, jsonLdContext, headers);
     }
 
-    public static Response putRdfContainer(OkHttpClient httpClient, URL url, Resource resource, ContentType contentType) throws SaiHttpException {
-        return putRdfContainer(httpClient, url, resource, contentType, null);
+    public static Response putRdfContainer(OkHttpClient httpClient, URI uri, Resource resource, ContentType contentType) throws SaiHttpException {
+        return putRdfContainer(httpClient, uri, resource, contentType, null);
     }
 
     /**
@@ -461,8 +460,8 @@ public class HttpUtils {
     }
 
     /**
-     * Wrap conversion from URL to URI which should never fail on a well-formed URL.
-     * @param url covert this URL to a URI
+     * Wrap conversion from URI to URI which should never fail on a well-formed URI.
+     * @param url covert this URI to a URI
      * @return IRI java native object for a URI (useful for Jena graph operations)
      */
     public static URI urlToUri(URL url) {
@@ -535,16 +534,17 @@ public class HttpUtils {
 
     /**
      * Adds a child to the end of the path of <code>baseUrl</code>
-     * @param baseUrl Base URL to append to
+     * @param baseUri Base URL to append to
      * @param child Child to add to the path
-     * @return URL with <code>child</code> appended
+     * @return URI with <code>child</code> appended
      * @throws SaiHttpException
      */
-    public static URL addChildToUrlPath(URL baseUrl, String child) throws SaiHttpException {
+    public static URI addChildToUriPath(URI baseUri, String child) throws SaiHttpException {
         try {
-            return new URL(baseUrl, child);
-        } catch (MalformedURLException ex) {
-            throw new SaiHttpException("Unable to append child " + child + "to URL path " + baseUrl + ": " + ex.getMessage());
+            URL url = new URL(baseUri.toURL(), child);
+            return url.toURI();
+        } catch (MalformedURLException | URISyntaxException ex) {
+            throw new SaiHttpException("Unable to append child " + child + "to URL path " + baseUri + ": " + ex.getMessage());
         }
     }
 
