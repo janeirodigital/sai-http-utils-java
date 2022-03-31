@@ -26,7 +26,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import static com.janeirodigital.mockwebserver.DispatcherHelper.*;
-import static com.janeirodigital.mockwebserver.MockWebServerHelper.toUrl;
+import static com.janeirodigital.mockwebserver.MockWebServerHelper.toMockUri;
 import static com.janeirodigital.sai.httputils.ContentType.TEXT_HTML;
 import static com.janeirodigital.sai.httputils.ContentType.TEXT_TURTLE;
 import static com.janeirodigital.sai.httputils.HttpHeader.AUTHORIZATION;
@@ -37,14 +37,14 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 
-public class HttpUtilsTests {
+class HttpUtilsTests {
 
     private static MockWebServer server;
     private static MockWebServer queuingServer;
     private static OkHttpClient httpClient;
 
     @BeforeAll
-    static void beforeAll() throws SaiHttpException {
+    static void beforeAll() {
 
         // Initialize request fixtures for the MockWebServer
         RequestMatchingFixtureDispatcher dispatcher = new RequestMatchingFixtureDispatcher();
@@ -82,7 +82,7 @@ public class HttpUtilsTests {
     @Test
     @DisplayName("Get a resource")
     void getHTTPResource() throws SaiHttpException {
-        Response response = getResource(httpClient, toUrl(server, "/get-document-html"));
+        Response response = getResource(httpClient, toMockUri(server, "/get-document-html"));
         assertTrue(response.isSuccessful());
         response.close();
     }
@@ -90,7 +90,7 @@ public class HttpUtilsTests {
     @Test
     @DisplayName("Get a required resource")
     void getRequiredHTTPResource() throws SaiHttpException, SaiHttpNotFoundException {
-        Response response = getRequiredResource(httpClient, toUrl(server, "/get-document-html"));
+        Response response = getRequiredResource(httpClient, toMockUri(server, "/get-document-html"));
         assertTrue(response.isSuccessful());
         response.close();
     }
@@ -98,7 +98,7 @@ public class HttpUtilsTests {
     @Test
     @DisplayName("Get a missing resource")
     void GetMissingHTTPResource() throws SaiHttpException {
-        Response response = getResource(httpClient, toUrl(server, "/not-found"));
+        Response response = getResource(httpClient, toMockUri(server, "/not-found"));
         assertFalse(response.isSuccessful());
         assertEquals(404, response.code());
         response.close();
@@ -107,7 +107,7 @@ public class HttpUtilsTests {
     @Test
     @DisplayName("Get a missing RDF resource")
     void GetMissingRdfResource() throws SaiHttpException {
-        Response response = getRdfResource(httpClient, toUrl(server, "/not-found"));
+        Response response = getRdfResource(httpClient, toMockUri(server, "/not-found"));
         assertFalse(response.isSuccessful());
         assertEquals(404, response.code());
         response.close();
@@ -115,83 +115,83 @@ public class HttpUtilsTests {
 
     @Test
     @DisplayName("Get an RDF resource")
-    void getRdfHttpResource() throws SaiHttpException, SaiRdfException, SaiHttpNotFoundException {
-        URL url = toUrl(server, "/get-rdf-resource-ttl");
-        Response response = getRdfResource(httpClient, url);
+    void getRdfHttpResource() throws SaiHttpException {
+        URI uri = toMockUri(server, "/get-rdf-resource-ttl");
+        Response response = getRdfResource(httpClient, uri);
         assertTrue(response.isSuccessful());
         Model model = getRdfModelFromResponse(response);
         assertNotNull(model);
-        assertNotNull(model.getResource(url.toString()));
+        assertNotNull(model.getResource(uri.toString()));
         response.close();
     }
 
     @Test
     @DisplayName("Get a Required RDF resource")
-    void getRequiredRdfHttpResource() throws SaiHttpException, SaiRdfException, SaiHttpNotFoundException {
-        URL url = toUrl(server, "/get-rdf-resource-ttl");
-        Response response = getRequiredRdfResource(httpClient, url);
+    void getRequiredRdfHttpResource() throws SaiHttpException, SaiHttpNotFoundException {
+        URI uri = toMockUri(server, "/get-rdf-resource-ttl");
+        Response response = getRequiredRdfResource(httpClient, uri);
         assertTrue(response.isSuccessful());
         Model model = getRdfModelFromResponse(response);
         assertNotNull(model);
-        assertNotNull(model.getResource(url.toString()));
+        assertNotNull(model.getResource(uri.toString()));
         response.close();
     }
 
     @Test
     @DisplayName("Get an RDF resource with headers")
-    void getRdfHttpResourceHeaders() throws SaiHttpException, SaiRdfException {
-        URL url = toUrl(server, "/get-rdf-resource-ttl");
+    void getRdfHttpResourceHeaders() throws SaiHttpException {
+        URI uri = toMockUri(server, "/get-rdf-resource-ttl");
         Headers headers = setHttpHeader(AUTHORIZATION, "some-token-value");
-        Response response = getRdfResource(httpClient, url, headers);
+        Response response = getRdfResource(httpClient, uri, headers);
         assertTrue(response.isSuccessful());
         Model model = getRdfModelFromResponse(response);
         assertNotNull(model);
-        assertNotNull(model.getResource(url.toString()));
+        assertNotNull(model.getResource(uri.toString()));
         response.close();
     }
 
     @Test
     @DisplayName("Fail to get a resource without content-type")
     void FailToGetHttpResourceNoContentType() {
-        URL url = toUrl(queuingServer, "/get-rdf-resource-ttl-no-ct");
+        URI uri = toMockUri(queuingServer, "/get-rdf-resource-ttl-no-ct");
         queuingServer.enqueue(new MockResponse()
                 .setResponseCode(200)
                 .setBody(getRdfBody()));
-        assertThrows(SaiHttpException.class, () -> { getRdfResource(httpClient, url); });
+        assertThrows(SaiHttpException.class, () -> { getRdfResource(httpClient, uri); });
     }
 
     @Test
     @DisplayName("Fail to get an RDF resource with bad content-type")
     void failToGetRdfHttpResourceBadContentType() {
-        URL url = toUrl(queuingServer, "/get-rdf-resource-ttl-coolweb");
+        URI uri = toMockUri(queuingServer, "/get-rdf-resource-ttl-coolweb");
         queuingServer.enqueue(new MockResponse()
                 .setResponseCode(200)
                 .addHeader("Content-Type", "cool/web")
                 .setBody(getRdfBody()));
-        assertThrows(SaiHttpException.class, () -> { getRdfResource(httpClient, url); });
+        assertThrows(SaiHttpException.class, () -> { getRdfResource(httpClient, uri); });
     }
 
     @Test
     @DisplayName("Fail to get an RDF resource with non-rdf content-type")
     void failToGetRdfHttpResourceNonRdfContentType() {
-        URL url = toUrl(queuingServer, "/get-rdf-resource-ttl-nonrdf");
+        URI uri = toMockUri(queuingServer, "/get-rdf-resource-ttl-nonrdf");
         queuingServer.enqueue(new MockResponse()
                 .setResponseCode(200)
                 .addHeader("Content-Type", "application/octet-stream")
                 .setBody(getRdfBody()));
-        assertThrows(SaiHttpException.class, () -> { getRdfResource(httpClient, url); });
+        assertThrows(SaiHttpException.class, () -> { getRdfResource(httpClient, uri); });
     }
 
     @Test
     @DisplayName("Fail to get an RDF resource due to IO issue")
     void failToGetRdfHttpResourceIO() throws SaiHttpException {
-        URL url = toUrl(queuingServer, "/get-rdf-resource-ttl-io");
+        URI uri = toMockUri(queuingServer, "/get-rdf-resource-ttl-io");
         queuingServer.enqueue(new MockResponse()
                 .setResponseCode(200)
                 .addHeader(CONTENT_TYPE.getValue(), TEXT_TURTLE.getValue())
                 .setBody(getRdfBody())
                 .setSocketPolicy(SocketPolicy.DISCONNECT_DURING_RESPONSE_BODY));
-        Response response = getResource(httpClient, url);
+        Response response = getResource(httpClient, uri);
         assertTrue(response.isSuccessful());
         assertThrows(SaiHttpException.class, () -> { getRdfModelFromResponse(response); });
         response.close();
@@ -202,11 +202,11 @@ public class HttpUtilsTests {
     void FailToGetRequiredMissingHttpResource() {
         queuingServer.enqueue(new MockResponse().setResponseCode(404).setBody(""));
         assertThrows(SaiHttpNotFoundException.class, () -> {
-            getRequiredResource(httpClient, toUrl(queuingServer, "/no-resource"));
+            getRequiredResource(httpClient, toMockUri(queuingServer, "/no-resource"));
         });
         queuingServer.enqueue(new MockResponse().setResponseCode(401).setBody(""));
         assertThrows(SaiHttpException.class, () -> {
-            getRequiredResource(httpClient, toUrl(queuingServer, "/not-authorized"));
+            getRequiredResource(httpClient, toMockUri(queuingServer, "/not-authorized"));
         });
     }
 
@@ -214,11 +214,11 @@ public class HttpUtilsTests {
     @DisplayName("Fail to get a resource and log details")
     void FailToGetResourceAndLog() throws SaiHttpException {
         queuingServer.enqueue(new MockResponse().setResponseCode(404).setBody(""));
-        try(Response response = getResource(httpClient, toUrl(queuingServer, "/no-resource"))) {
+        try(Response response = getResource(httpClient, toMockUri(queuingServer, "/no-resource"))) {
             assertNotNull(getResponseFailureMessage(response));
         }
         queuingServer.enqueue(new MockResponse().setResponseCode(404).setBody(""));
-        Response response = deleteResource(httpClient, toUrl(queuingServer, "/path/no-resource"));
+        assertDoesNotThrow(() -> deleteResource(httpClient, toMockUri(queuingServer, "/path/no-resource")));
     }
 
     @Test
@@ -228,32 +228,32 @@ public class HttpUtilsTests {
                 .setBody(new Buffer().write(new byte[4096]))
                 .setSocketPolicy(SocketPolicy.DISCONNECT_AT_START));
         assertThrows(SaiHttpException.class, () -> {
-            getResource(httpClient, toUrl(queuingServer, "/get-document-io"));
+            getResource(httpClient, toMockUri(queuingServer, "/get-document-io"));
         });
     }
 
     @Test
     @DisplayName("Update a resource")
     void updateHttpResource() throws SaiHttpException {
-        Response response = putResource(httpClient, toUrl(server, "/put-update-resource"), null, getHtmlBody(), TEXT_HTML);
+        Response response = putResource(httpClient, toMockUri(server, "/put-update-resource"), null, getHtmlBody(), TEXT_HTML);
         assertTrue(response.isSuccessful());
-        response = putResource(httpClient, toUrl(server, "/put-update-resource"), null, null, TEXT_HTML);
+        response = putResource(httpClient, toMockUri(server, "/put-update-resource"), null, null, TEXT_HTML);
         assertTrue(response.isSuccessful());
     }
 
     @Test
     @DisplayName("Update an RDF resource")
     void updateRdfHttpResource() throws SaiHttpException, SaiRdfException {
-        URL url = toUrl(server, "/put-update-resource");
-        Model model = getModelFromString(urlToUri(url), getRdfBody(), TEXT_TURTLE.getValue());
-        Resource resource = model.getResource(url + "#project");
+        URI uri = toMockUri(server, "/put-update-resource");
+        Model model = getModelFromString(uri, getRdfBody(), TEXT_TURTLE.getValue());
+        Resource resource = model.getResource(uri + "#project");
         // Update with resource content
-        Response response = putRdfResource(httpClient, url, resource, TEXT_TURTLE);
+        Response response = putRdfResource(httpClient, uri, resource, TEXT_TURTLE);
         assertTrue(response.isSuccessful());
         response.close();
         // Update with no resource content (treated as empty body)
         Headers headers = null;
-        response = putRdfResource(httpClient, url, null, TEXT_TURTLE, headers);
+        response = putRdfResource(httpClient, uri, null, TEXT_TURTLE, headers);
         assertTrue(response.isSuccessful());
         response.close();
     }
@@ -261,23 +261,23 @@ public class HttpUtilsTests {
     @Test
     @DisplayName("Update a JSON-LD RDF resource")
     void updateJsonLdHttpResource() throws SaiHttpException, SaiRdfException {
-        URL url = toUrl(server, "/put-jsonld-resource");
-        Model readableModel = getModelFromString(urlToUri(url), getJsonLdString(url), LD_JSON);
-        Resource resource = getResourceFromModel(readableModel, url);
+        URI uri = toMockUri(server, "/put-jsonld-resource");
+        Model readableModel = getModelFromString(uri, getJsonLdString(uri), LD_JSON);
+        Resource resource = getResourceFromModel(readableModel, uri);
         // Update with resource content
-        Response response = putRdfResource(httpClient, url, resource, ContentType.LD_JSON, "");
+        Response response = putRdfResource(httpClient, uri, resource, ContentType.LD_JSON, "");
         assertTrue(response.isSuccessful());
     }
 
     @Test
     @DisplayName("Fail to update a JSON-LD RDF resource")
     void failToUpdateJsonLdHttpResource() throws SaiRdfException {
-        URL url = toUrl(server, "/put-jsonld-resource");
-        Model readableModel = getModelFromString(urlToUri(url), getJsonLdString(url), LD_JSON);
-        Resource resource = getResourceFromModel(readableModel, url);
+        URI uri = toMockUri(server, "/put-jsonld-resource");
+        Model readableModel = getModelFromString(uri, getJsonLdString(uri), LD_JSON);
+        Resource resource = getResourceFromModel(readableModel, uri);
         try (MockedStatic<RdfUtils> mockUtils = Mockito.mockStatic(RdfUtils.class, Mockito.CALLS_REAL_METHODS)) {
             mockUtils.when(() -> RdfUtils.getJsonLdStringFromModel(any(Model.class), anyString())).thenThrow(SaiRdfException.class);
-            assertThrows(SaiHttpException.class, () -> putRdfResource(httpClient, url, resource, ContentType.LD_JSON, ""));
+            assertThrows(SaiHttpException.class, () -> putRdfResource(httpClient, uri, resource, ContentType.LD_JSON, ""));
         }
 
     }
@@ -285,10 +285,10 @@ public class HttpUtilsTests {
     @Test
     @DisplayName("Create an RDF container")
     void createRdfContainerHttpResource() throws SaiHttpException, SaiRdfException {
-        URL url = toUrl(server, "/put-create-resource");
-        Model model = getModelFromString(urlToUri(url), getRdfContainerBody(), TEXT_TURTLE.getValue());
-        Resource resource = model.getResource(url + "#project");
-        Response response = putRdfContainer(httpClient, url, resource, TEXT_TURTLE);
+        URI uri = toMockUri(server, "/put-create-resource");
+        Model model = getModelFromString(uri, getRdfContainerBody(), TEXT_TURTLE.getValue());
+        Resource resource = model.getResource(uri + "#project");
+        Response response = putRdfContainer(httpClient, uri, resource, TEXT_TURTLE);
         assertTrue(response.isSuccessful());
         response.close();
     }
@@ -300,14 +300,14 @@ public class HttpUtilsTests {
                 .setBody(new Buffer().write(new byte[4096]))
                 .setSocketPolicy(SocketPolicy.DISCONNECT_AT_START));
         assertThrows(SaiHttpException.class, () -> {
-            putResource(httpClient, toUrl(queuingServer, "/put-update-resource-io"), null, getHtmlBody(), TEXT_TURTLE);
+            putResource(httpClient, toMockUri(queuingServer, "/put-update-resource-io"), null, getHtmlBody(), TEXT_TURTLE);
         });
     }
 
     @Test
     @DisplayName("Create a resource")
     void createHttpResource() throws SaiHttpException {
-        Response response = putResource(httpClient, toUrl(server, "/put-create-resource"), null, getHtmlBody(), TEXT_TURTLE);
+        Response response = putResource(httpClient, toMockUri(server, "/put-create-resource"), null, getHtmlBody(), TEXT_TURTLE);
         assertTrue(response.isSuccessful());
     }
 
@@ -315,7 +315,7 @@ public class HttpUtilsTests {
     @DisplayName("Delete a resource")
     void deleteHttpResource() throws SaiHttpException {
         Headers headers = setHttpHeader(AUTHORIZATION, "some-token-value");
-        Response response = deleteResource(httpClient, toUrl(server, "/delete-resource"), headers);
+        Response response = deleteResource(httpClient, toMockUri(server, "/delete-resource"), headers);
         assertTrue(response.isSuccessful());
     }
 
@@ -326,7 +326,7 @@ public class HttpUtilsTests {
                 .setBody(new Buffer().write(new byte[4096]))
                 .setSocketPolicy(SocketPolicy.DISCONNECT_AT_START));
         assertThrows(SaiHttpException.class, () -> {
-            deleteResource(httpClient, toUrl(queuingServer, "/delete-resource-io"));
+            deleteResource(httpClient, toMockUri(queuingServer, "/delete-resource-io"));
         });
     }
 
@@ -527,14 +527,14 @@ public class HttpUtilsTests {
                 "    ex:hasMilestone </data/projects/project-1/milestone-3/#milestone> .";
     }
 
-    private String getJsonLdString(URL baseUrl) {
+    private String getJsonLdString(URI baseUri) {
         return "{\n" +
                 "  \"@context\": {\n" +
                 "    \"name\": \"http://schema.org/name\",\n" +
                 "    \"id\": \"@id\"\n" +
                 "  },\n" +
                 "  \"name\": \"Justin B\",\n" +
-                "  \"id\": \"" + baseUrl + "\"\n" +
+                "  \"id\": \"" + baseUri + "\"\n" +
                 "}";
     }
     
