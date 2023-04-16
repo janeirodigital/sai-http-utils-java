@@ -47,6 +47,7 @@ jobs:
           path: ~/.m2
           key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
           restore-keys: ${{ runner.os }}-m2
+      # All commits to git will be signed with the GPG key of xformer-bot
       - name: Install GPG key for signing commits
         id: install-gpg-key
         env:
@@ -56,10 +57,12 @@ jobs:
           echo $XFORMER_BOT_GPG_KEY | base64 --decode | gpg --batch --import
           echo $XFORMER_BOT_GPG_PASSPHRASE | gpg --batch --passphrase-fd 0 --pinentry-mode loopback --import-ownertrust
           gpg --list-keys --keyid-format LONG
+      # Configure the git user with the name and email of xformer-bot
       - name: Configure git user
         run: |
           git config --global user.name ${{ vars.XFORMER_BOT_USERNAME }}
           git config --global user.email ${{ vars.XFORMER_BOT_EMAIL }}
+      # Determine the proper release version based on the increment_type input
       - name: Determine release version
         id: determine-release-version
         run: |
@@ -70,6 +73,7 @@ jobs:
           else
             echo "RELEASE_VERSION_FLAG='-DautoVersionIncrement=true'" >> $GITHUB_OUTPUT
           fi
+      # Run the maven release preparation goal to create the release tag and bump the version
       - name: Prepare the release
         run: mvn -B release:prepare --file pom.xml -s ${{ github.workspace }}/settings.xml ${{ steps.determine-release-version.outputs.RELEASE_VERSION_FLAG }} -Dgpg.keyname=${{ secrets.XFORMER_BOT_GPG_KEY_ID }} -Dgpg.passphrase=${{ secrets.XFORMER_BOT_GPG_PASSPHRASE }}
         env:
@@ -77,6 +81,7 @@ jobs:
           MAVEN_PASSWORD: ${{ secrets.JD_OSS_MAVEN_PASSWORD }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+      # Deploy the release to the package repository
       - name: Perform the release
         run: mvn -B release:perform --file pom.xml -s ${{ github.workspace }}/settings.xml
         env:
