@@ -56,6 +56,10 @@ jobs:
           echo $XFORMER_BOT_GPG_KEY | base64 --decode | gpg --batch --import
           echo $XFORMER_BOT_GPG_PASSPHRASE | gpg --batch --passphrase-fd 0 --pinentry-mode loopback --import-ownertrust
           gpg --list-keys --keyid-format LONG
+      - name: Configure git user
+        run: |
+          git config --global user.name ${{ vars.XFORMER_BOT_USERNAME }}
+          git config --global user.email ${{ vars.XFORMER_BOT_EMAIL }}
       - name: Determine release version
         id: determine-release-version
         run: |
@@ -67,7 +71,7 @@ jobs:
             echo "RELEASE_VERSION_FLAG='-DautoVersionIncrement=true'" >> $GITHUB_OUTPUT
           fi
       - name: Prepare the release
-        run: mvn -B release:prepare --file pom.xml -s ${{ github.workspace }}/settings.xml ${{ steps.determine-release-version.outputs.RELEASE_VERSION_FLAG }} -Dusername=${{ vars.XFORMER_BOT_USERNAME }} -Dgpg.keyname=${{ secrets.XFORMER_BOT_GPG_KEY_ID }} -D gpg.passphrase=${{ secrets.XFORMER_BOT_GPG_PASSPHRASE }}
+        run: mvn -B release:prepare --file pom.xml -s ${{ github.workspace }}/settings.xml ${{ steps.determine-release-version.outputs.RELEASE_VERSION_FLAG }} -Dgpg.keyname=${{ secrets.XFORMER_BOT_GPG_KEY_ID }} -Dgpg.passphrase=${{ secrets.XFORMER_BOT_GPG_PASSPHRASE }}
         env:
           MAVEN_USERNAME: ${{ secrets.JD_OSS_MAVEN_USERNAME }}
           MAVEN_PASSWORD: ${{ secrets.JD_OSS_MAVEN_PASSWORD }}
