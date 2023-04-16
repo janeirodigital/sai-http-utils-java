@@ -50,7 +50,7 @@ jobs:
       - name: Install GPG key for signing commits
         id: install-gpg-key
         run: |
-          echo "${{ secrets.XFORMER_GPG_KEY }}" | gpg --import
+          echo "${{ secrets.XFORMER_BOT_GPG_KEY }}" | gpg --import
           gpg --list-keys --keyid-format LONG
       - name: Determine release version
         id: determine-release-version
@@ -63,7 +63,7 @@ jobs:
             echo "RELEASE_VERSION_FLAG='-DautoVersionIncrement=true'" >> $GITHUB_OUTPUT
           fi
       - name: Prepare the release
-        run: mvn -B release:prepare --file pom.xml -s ${{ github.workspace }}/settings.xml ${{ steps.determine-release-version.outputs.RELEASE_VERSION_FLAG }} -Dgpg.keyname=${{ secrets.XFORMER_GPG_KEY_ID }}
+        run: mvn -B release:prepare --file pom.xml -s ${{ github.workspace }}/settings.xml ${{ steps.determine-release-version.outputs.RELEASE_VERSION_FLAG }} -Dgpg.keyname=${{ secrets.XFORMER_BOT_GPG_KEY_ID }} -D gpg.passphrase=${{ secrets.XFORMER_BOT_GPG_PASSPHRASE }}
         env:
           MAVEN_USERNAME: ${{ secrets.JD_OSS_MAVEN_USERNAME }}
           MAVEN_PASSWORD: ${{ secrets.JD_OSS_MAVEN_PASSWORD }}
