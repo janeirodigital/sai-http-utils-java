@@ -60,7 +60,7 @@ jobs:
           # maven-args: "-Dmaven.javadoc.skip=true -DskipTests -DskipITs -Dmaven.deploy.skip=true"
           maven-args: ""
           ###########################################################
-          ssh-private-key: ${{ secrets.XFORMER_SAI_HTTP_UTILS_KEY }}
+          gitrepo-access-token: ${{ secrets.GITHUB_TOKEN }}
           ###########################################################
           gpg-enabled: true
           gpg-key-id: ${{ secrets.XFORMER_GPG_KEY_ID }}
