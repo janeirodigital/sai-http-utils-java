@@ -49,9 +49,12 @@ jobs:
           restore-keys: ${{ runner.os }}-m2
       - name: Install GPG key for signing commits
         id: install-gpg-key
+        env:
+          XFORMER_BOT_GPG_KEY: ${{ secrets.XFORMER_BOT_GPG_KEY }}
+          XFORMER_BOT_GPG_PASSPHRASE: ${{ secrets.XFORMER_BOT_GPG_PASSPHRASE }}
         run: |
-          echo ${{ secrets.XFORMER_BOT_GPG_KEY }} | gpg --batch --import
-          echo ${{ secrets.XFORMER_BOT_GPG_PASSPHRASE }} | gpg --batch --passphrase-fd 0 --pinentry-mode loopback --import-ownertrust
+          echo $XFORMER_BOT_GPG_KEY | gpg --batch --import
+          echo $XFORMER_BOT_GPG_PASSPHRASE | gpg --batch --passphrase-fd 0 --pinentry-mode loopback --import-ownertrust
           gpg --list-keys --keyid-format LONG
       - name: Determine release version
         id: determine-release-version
