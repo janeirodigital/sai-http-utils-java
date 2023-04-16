@@ -67,7 +67,7 @@ jobs:
             echo "RELEASE_VERSION_FLAG='-DautoVersionIncrement=true'" >> $GITHUB_OUTPUT
           fi
       - name: Prepare the release
-        run: mvn -B release:prepare --file pom.xml -s ${{ github.workspace }}/settings.xml ${{ steps.determine-release-version.outputs.RELEASE_VERSION_FLAG }} -Dgpg.keyname=${{ secrets.XFORMER_BOT_GPG_KEY_ID }} -D gpg.passphrase=${{ secrets.XFORMER_BOT_GPG_PASSPHRASE }}
+        run: mvn -B release:prepare --file pom.xml -s ${{ github.workspace }}/settings.xml ${{ steps.determine-release-version.outputs.RELEASE_VERSION_FLAG }} -Dusername=${{ vars.XFORMER_BOT_USERNAME }} -Dgpg.keyname=${{ secrets.XFORMER_BOT_GPG_KEY_ID }} -D gpg.passphrase=${{ secrets.XFORMER_BOT_GPG_PASSPHRASE }}
         env:
           MAVEN_USERNAME: ${{ secrets.JD_OSS_MAVEN_USERNAME }}
           MAVEN_PASSWORD: ${{ secrets.JD_OSS_MAVEN_PASSWORD }}
