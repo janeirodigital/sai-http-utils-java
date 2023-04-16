@@ -153,21 +153,21 @@
 
     <repositories>
         <repository>
-            <id>xformativ-nexus</id>
-            <name>Xformativ Repository</name>
-            <url>https://repo.janeirodigital.com/repository/oss/</url>
+            <id>jd-oss-github</id>
+            <name>OSS Maven Package Repository on Janeiro Digital GitHub</name>
+            <url>https://maven.pkg.github.com/janeirodigital/oss-packages</url>
         </repository>
     </repositories>
     <distributionManagement>
         <snapshotRepository>
-            <id>xformativ-nexus</id>
-            <name>Xformativ Repository</name>
-            <url>https://repo.janeirodigital.com/repository/oss/</url>
+            <id>jd-oss-github</id>
+            <name>OSS Maven Package Repository on Janeiro Digital GitHub</name>
+            <url>https://maven.pkg.github.com/janeirodigital/oss-packages</url>
         </snapshotRepository>
         <repository>
-            <id>xformativ-nexus</id>
-            <name>Xformativ Repository</name>
-            <url>https://repo.janeirodigital.com/repository/oss/</url>
+            <id>jd-oss-github</id>
+            <name>OSS Maven Package Repository on Janeiro Digital GitHub</name>
+            <url>https://maven.pkg.github.com/janeirodigital/oss-packages</url>
         </repository>
     </distributionManagement>
 
