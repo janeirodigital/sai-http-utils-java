@@ -50,7 +50,8 @@ jobs:
       - name: Install GPG key for signing commits
         id: install-gpg-key
         run: |
-          echo "${{ secrets.XFORMER_BOT_GPG_KEY }}" | gpg --import
+          echo ${{ secrets.XFORMER_BOT_GPG_KEY }} | base64 --decode | gpg --batch --import
+          echo ${{ secrets.XFORMER_BOT_GPG_PASSPHRASE }} | gpg --batch --passphrase-fd 0 --pinentry-mode loopback --import-ownertrust
           gpg --list-keys --keyid-format LONG
       - name: Determine release version
         id: determine-release-version
