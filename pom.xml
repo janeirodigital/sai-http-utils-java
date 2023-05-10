@@ -21,7 +21,7 @@
         <junit.version>5.9.3</junit.version>
         <mockito.version>5.2.0</mockito.version>
         <okhttp.version>4.11.0</okhttp.version>
-        <sai-rdf-utils.version>0.9.4</sai-rdf-utils.version>
+        <sai-rdf-utils.version>0.9.9</sai-rdf-utils.version>
         <mockwebserverplus-ext.version>0.9.6</mockwebserverplus-ext.version>
         <sonar.organization>janeirodigital</sonar.organization>
         <sonar.host.url>https://sonarcloud.io</sonar.host.url>
