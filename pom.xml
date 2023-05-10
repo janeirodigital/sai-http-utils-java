@@ -7,19 +7,20 @@
     <version>0.9.6-SNAPSHOT</version>
 
     <properties>
+        <java.version>17</java.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven-compiler-plugin.version>3.11.0</maven-compiler-plugin.version>
-        <maven.compiler.source>11</maven.compiler.source>
-        <maven.compiler.target>11</maven.compiler.target>
+        <maven.compiler.source>${java.version}</maven.compiler.source>
+        <maven.compiler.target>${java.version}</maven.compiler.target>
         <maven-release-plugin.version>3.0.0-M5</maven-release-plugin.version>
         <maven-javadoc.version>3.5.0</maven-javadoc.version>
-        <jacoco-maven-plugin.version>0.8.7</jacoco-maven-plugin.version>
+        <jacoco-maven-plugin.version>0.8.10</jacoco-maven-plugin.version>
         <maven-surefire-plugin.version>3.0.0</maven-surefire-plugin.version>
         <lombok.version>1.18.26</lombok.version>
-        <slf4j.version>1.7.36</slf4j.version>
-        <junit.version>5.8.2</junit.version>
-        <mockito.version>4.4.0</mockito.version>
-        <okhttp.version>4.9.3</okhttp.version>
+        <slf4j.version>2.0.7</slf4j.version>
+        <junit.version>5.9.3</junit.version>
+        <mockito.version>5.2.0</mockito.version>
+        <okhttp.version>4.11.0</okhttp.version>
         <sai-rdf-utils.version>0.9.4</sai-rdf-utils.version>
         <mockwebserverplus-ext.version>0.9.6</mockwebserverplus-ext.version>
         <sonar.organization>janeirodigital</sonar.organization>
@@ -99,7 +100,7 @@
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>${maven-compiler-plugin.version}</version>
                 <configuration>
-                    <release>11</release>
+                    <release>${java.version}</release>
                     <annotationProcessorPaths>
                         <path>
                             <groupId>org.projectlombok</groupId>
