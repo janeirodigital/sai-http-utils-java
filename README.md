@@ -7,7 +7,7 @@
 
 A set of utilities for working with [OkHttp](https://square.github.io/okhttp/) HTTP client requests and responses.
 
-Take a look at [CONTRIBUTING](CONTRIBUTING.md) for specifics on how to contribute to this library.
+Look at [CONTRIBUTING](CONTRIBUTING.md) for specifics on how to contribute to this library.
 
 [JavaDocs](https://janeirodigital.github.io/sai-http-utils-java/) are generated and published with each release.
 
